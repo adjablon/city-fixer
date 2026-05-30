@@ -28,12 +28,12 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
 
 ## Phase 0: Prerequisites & Pre-flight
 
-- [ ] **0.1** Verify Java 21: `java -version`
-- [ ] **0.2** Verify Maven wrapper: `./mvnw --version`
-- [ ] **0.3** Verify the app builds: `./mvnw clean package -DskipTests`
-- [ ] **0.4** Verify the app starts locally: `java -jar target/city-fix-0.0.1-SNAPSHOT.jar` (expect Spring Boot banner, Ctrl+C to stop)
-- [ ] **0.5** Install Azure CLI if missing: `brew install azure-cli`
-- [ ] **0.6** Login to Azure and lock to the target subscription:
+- [x] **0.1** Verify Java 21: `java -version`
+- [x] **0.2** Verify Maven wrapper: `./mvnw --version`
+- [x] **0.3** Verify the app builds: `./mvnw clean package -DskipTests`
+- [x] **0.4** Verify the app starts locally: `java -jar target/city-fix-0.0.1-SNAPSHOT.jar` (expect Spring Boot banner, Ctrl+C to stop)
+- [x] **0.5** Install Azure CLI if missing: `brew install azure-cli`
+- [x] **0.6** Login to Azure and lock to the target subscription:
   ```bash
   az login
   AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
@@ -41,7 +41,7 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
   az account show --output table
   # Verify the correct subscription name and ID are displayed
   ```
-- [ ] **0.7** GitHub repository `adjablon/city-fixer` exists with remote `origin` configured, but nothing has been pushed yet. Push the initial commit:
+- [x] **0.7** GitHub repository `adjablon/city-fixer` exists with remote `origin` configured, but nothing has been pushed yet. Push the initial commit:
   ```bash
   git add .
   git commit -m "Initial commit: CityFix scaffold"
@@ -54,21 +54,21 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
 
 ## Phase 1: Azure Resource Provisioning
 
-- [ ] **1.1** Create resource group with tags:
+- [x] **1.1** Create resource group with tags:
   ```bash
   az group create --name cityfix-rg --location westeurope \
     --subscription $AZURE_SUBSCRIPTION_ID \
     --tags project=cityfix environment=production managed-by=cli
   ```
 
-- [ ] **1.2** Create App Service plan (B1 Linux):
+- [x] **1.2** Create App Service plan (B1 Linux):
   ```bash
   az appservice plan create --name cityfix-plan --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
     --sku B1 --is-linux --tags project=cityfix
   ```
 
-- [ ] **1.3** Create App Service with Java 21:
+- [x] **1.3** Create App Service with Java 21:
   ```bash
   az webapp create --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
@@ -76,7 +76,7 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
   ```
   > **Edge case — name conflict:** App Service names are globally unique. If `cityfix-app-aj` is taken, use `cityfix-app-aj-<suffix>` and update all subsequent commands. Check with: `nslookup cityfix-app-aj.azurewebsites.net` — if it resolves, the name is taken.
 
-- [ ] **1.4** Configure Always On + JVM settings + startup timeout:
+- [x] **1.4** Configure Always On + JVM settings + startup timeout:
   ```bash
   az webapp config set --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID --always-on true
@@ -88,7 +88,7 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
       JAVA_OPTS="-Xms512m -Xmx1g -XX:MaxRAMPercentage=60"
   ```
 
-- [ ] **1.5** Verify: `curl -s -o /dev/null -w "%{http_code}" https://cityfix-app-aj.azurewebsites.net` returns `200` or `404` (default placeholder).
+- [x] **1.5** Verify: `curl -s -o /dev/null -w "%{http_code}" https://cityfix-app-aj.azurewebsites.net` returns `200` or `404` (default placeholder).
 
 > **Gate:** App Service exists and responds.
 
@@ -96,13 +96,13 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
 
 ## Phase 2: Database Provisioning
 
-- [ ] **2.1** Generate a strong admin password:
+- [x] **2.1** Generate a strong admin password:
   ```bash
   openssl rand -base64 24
   ```
   > Store securely. Avoid `'`, `"`, `\`, `$`, `` ` `` in password (regenerate if present).
 
-- [ ] **2.2** Create PostgreSQL Flexible Server (B1ms):
+- [x] **2.2** Create PostgreSQL Flexible Server (B1ms):
   ```bash
   az postgres flexible-server create --name cityfix-db --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
@@ -112,7 +112,7 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
   ```
   > Takes 3–5 minutes. Edge case — name conflict: same global uniqueness rule as App Service.
 
-- [ ] **2.3** Configure firewall — allow Azure services + local dev IP:
+- [x] **2.3** Configure firewall — allow Azure services + local dev IP:
   ```bash
   az postgres flexible-server firewall-rule create --name cityfix-db \
     --resource-group cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID \
@@ -127,14 +127,14 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
   ```
   > **Security note:** `AllowAzureServices` (0.0.0.0) allows any Azure service to attempt connection — credentials still required. Acceptable for MVP; switch to VNet integration post-MVP.
 
-- [ ] **2.4** Create the application database:
+- [x] **2.4** Create the application database:
   ```bash
   az postgres flexible-server db create --server-name cityfix-db \
     --resource-group cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID \
     --database-name cityfix
   ```
 
-- [ ] **2.5** Verify connectivity (optional, requires `psql`):
+- [x] **2.5** Verify connectivity (optional, requires `psql`):
   ```bash
   psql "host=cityfix-db.postgres.database.azure.com port=5432 dbname=cityfix \
     user=cityfixadmin password=<PASSWORD> sslmode=require"
@@ -245,12 +245,12 @@ az webapp config appsettings set --name cityfix-app-aj --resource-group cityfix-
 
 ## Phase 4: First Deployment
 
-- [ ] **4.1** Build the fat JAR:
+- [x] **4.1** Build the fat JAR:
   ```bash
   ./mvnw clean package -DskipTests
   ```
 
-- [ ] **4.2** Deploy via CLI:
+- [x] **4.2** Deploy via CLI:
   ```bash
   az webapp deploy --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
@@ -258,7 +258,7 @@ az webapp config appsettings set --name cityfix-app-aj --resource-group cityfix-
   ```
   > JAR is auto-renamed to `app.jar` on the server. Takes 1–3 minutes.
 
-- [ ] **4.3** Enable logging and watch startup:
+- [x] **4.3** Enable logging and watch startup:
   ```bash
   az webapp log config --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
@@ -285,21 +285,21 @@ az webapp config appsettings set --name cityfix-app-aj --resource-group cityfix-
 
 ## Phase 5: Smoke Test
 
-- [ ] **5.1** Hit root URL:
+- [x] **5.1** Hit root URL:
   ```bash
   curl -s https://cityfix-app-aj.azurewebsites.net/
   # Expected: "CityFix is running"
   ```
 
-- [ ] **5.2** Check actuator health:
+- [x] **5.2** Check actuator health:
   ```bash
   curl -s https://cityfix-app-aj.azurewebsites.net/actuator/health
   # Expected: {"status":"UP"}
   ```
 
-- [ ] **5.3** Verify DB connectivity in health response — db component should show `UP` with PostgreSQL details.
+- [x] **5.3** Verify DB connectivity in health response — db component should show `UP` with PostgreSQL details.
 
-- [ ] **5.4** Audit all app settings:
+- [x] **5.4** Audit all app settings:
   ```bash
   az webapp config appsettings list --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID --output table
@@ -368,16 +368,16 @@ az webapp config appsettings set --name cityfix-app-aj --resource-group cityfix-
             package: target/city-fix-0.0.1-SNAPSHOT.jar
   ```
 
-- [ ] **6.4** Commit and push:
+- [x] **6.4** Commit and push:
   ```bash
   git add pom.xml src/ .github/
   git commit -m "First deployment: add DB deps, actuator, Azure profile, CI/CD pipeline"
   git push origin main
   ```
 
-- [ ] **6.5** Verify workflow succeeds: `gh run watch`
+- [x] **6.5** Verify workflow succeeds: `gh run watch`
 
-- [ ] **6.6** Verify app after CI deploy:
+- [x] **6.6** Verify app after CI deploy:
   ```bash
   curl -s https://cityfix-app-aj.azurewebsites.net/actuator/health
   ```
@@ -388,16 +388,17 @@ az webapp config appsettings set --name cityfix-app-aj --resource-group cityfix-
 
 ## Phase 7: Post-Deployment Hardening
 
-- [ ] **7.1** Verify all resources are tagged: `az resource list --resource-group cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID --output table`
-- [ ] **7.2** Audit for orphaned resources — expect only: `cityfix-plan`, `cityfix-app-aj`, `cityfix-db`
-- [ ] **7.4** Enable filesystem logging (already done in 4.3, verify it persists)
-- [ ] **7.5** Document cleanup commands for future teardown:
+- [x] **7.1** Verify all resources are tagged: `az resource list --resource-group cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID --output table`
+- [x] **7.2** Audit for orphaned resources — expect only: `cityfix-plan`, `cityfix-app-aj`, `cityfix-db`
+- [x] **7.4** Enable filesystem logging (already done in 4.3, verify it persists)
+- [x] **7.5** Document cleanup commands for future teardown:
   ```bash
   # 1. Delete all Azure resources (App Service, Plan, PostgreSQL)
   az group delete --name cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID --yes --no-wait
 
   # 2. Delete GitHub Secrets (optional — harmless if left)
-  gh secret delete AZURE_WEBAPP_PUBLISH_PROFILE
+  gh secret delete AZURE_WEBAPP_PUBLISH_USER
+  gh secret delete AZURE_WEBAPP_PUBLISH_PASS
   ```
 
 > **Gate:** All resources tagged. No orphans. Rollback procedure documented (re-run previous CI workflow or manual `az webapp deploy` with old JAR).
@@ -414,7 +415,7 @@ az webapp config appsettings set --name cityfix-app-aj --resource-group cityfix-
 | DB over public internet | Firewall + SSL `sslmode=require`; VNet post-MVP | 2.3, 3.4 |
 | Logs lost after 12h | Filesystem logging; check same-day; Log Analytics post-MVP | 4.3 |
 | JVM OOM on B1 (1.75 GB) | `JAVA_OPTS` caps heap at 1 GB | 1.4 |
-| Entra ID blocks CI auth | Used publish profile instead of service principal | 6.1 |
+| Entra ID blocks CI auth | Used basic auth (Kudu API) instead of service principal; required enabling basic auth on App Service | 6.1 |
 | Cost creep | Quarterly resource group audit | 7.2 |
 
 ---
