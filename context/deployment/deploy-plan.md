@@ -70,25 +70,25 @@ AZURE_SUBSCRIPTION_ID=5559456a-f30a-4505-a478-a3b978daabb7
 
 - [ ] **1.3** Create App Service with Java 21:
   ```bash
-  az webapp create --name cityfix-app --resource-group cityfix-rg \
+  az webapp create --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
     --plan cityfix-plan --runtime "JAVA:21-java21" --tags project=cityfix
   ```
-  > **Edge case — name conflict:** App Service names are globally unique. If `cityfix-app` is taken, use `cityfix-app-<suffix>` and update all subsequent commands. Check with: `nslookup cityfix-app.azurewebsites.net` — if it resolves, the name is taken.
+  > **Edge case — name conflict:** App Service names are globally unique. If `cityfix-app-aj` is taken, use `cityfix-app-aj-<suffix>` and update all subsequent commands. Check with: `nslookup cityfix-app-aj.azurewebsites.net` — if it resolves, the name is taken.
 
 - [ ] **1.4** Configure Always On + JVM settings + startup timeout:
   ```bash
-  az webapp config set --name cityfix-app --resource-group cityfix-rg \
+  az webapp config set --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID --always-on true
 
-  az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg \
+  az webapp config appsettings set --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
     --settings \
       WEBSITES_CONTAINER_START_TIME_LIMIT=300 \
       JAVA_OPTS="-Xms512m -Xmx1g -XX:MaxRAMPercentage=60"
   ```
 
-- [ ] **1.5** Verify: `curl -s -o /dev/null -w "%{http_code}" https://cityfix-app.azurewebsites.net` returns `200` or `404` (default placeholder).
+- [ ] **1.5** Verify: `curl -s -o /dev/null -w "%{http_code}" https://cityfix-app-aj.azurewebsites.net` returns `200` or `404` (default placeholder).
 
 > **Gate:** App Service exists and responds.
 
@@ -220,7 +220,7 @@ server.port=80
 ### 3.5 — Wire database secrets in App Service
 
 ```bash
-az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg \
+az webapp config appsettings set --name cityfix-app-aj --resource-group cityfix-rg \
   --subscription $AZURE_SUBSCRIPTION_ID \
   --settings \
     SPRING_PROFILES_ACTIVE=azure \
@@ -252,7 +252,7 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 
 - [ ] **4.2** Deploy via CLI:
   ```bash
-  az webapp deploy --name cityfix-app --resource-group cityfix-rg \
+  az webapp deploy --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
     --src-path target/city-fix-0.0.1-SNAPSHOT.jar --type jar --async false
   ```
@@ -260,12 +260,12 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 
 - [ ] **4.3** Enable logging and watch startup:
   ```bash
-  az webapp log config --name cityfix-app --resource-group cityfix-rg \
+  az webapp log config --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID \
     --application-logging filesystem --level information \
     --docker-container-logging filesystem
 
-  az webapp log tail --name cityfix-app --resource-group cityfix-rg \
+  az webapp log tail --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID
   ```
   > Expect: `Started CityFixApplication in X seconds`
@@ -287,13 +287,13 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 
 - [ ] **5.1** Hit root URL:
   ```bash
-  curl -s https://cityfix-app.azurewebsites.net/
+  curl -s https://cityfix-app-aj.azurewebsites.net/
   # Expected: "CityFix is running"
   ```
 
 - [ ] **5.2** Check actuator health:
   ```bash
-  curl -s https://cityfix-app.azurewebsites.net/actuator/health
+  curl -s https://cityfix-app-aj.azurewebsites.net/actuator/health
   # Expected: {"status":"UP"}
   ```
 
@@ -301,12 +301,12 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 
 - [ ] **5.4** Audit all app settings:
   ```bash
-  az webapp config appsettings list --name cityfix-app --resource-group cityfix-rg \
+  az webapp config appsettings list --name cityfix-app-aj --resource-group cityfix-rg \
     --subscription $AZURE_SUBSCRIPTION_ID --output table
   ```
   Expected: `SPRING_PROFILES_ACTIVE`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `JAVA_OPTS`, `WEBSITES_CONTAINER_START_TIME_LIMIT` — all present and correct.
 
-> **Edge case — 502/503:** App still starting. Wait 60–90s, retry. If persistent > 5 min: `az webapp restart --name cityfix-app --resource-group cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID` and re-check logs.
+> **Edge case — 502/503:** App still starting. Wait 60–90s, retry. If persistent > 5 min: `az webapp restart --name cityfix-app-aj --resource-group cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID` and re-check logs.
 
 > **Gate:** Root returns 200. Actuator health returns UP. DB component healthy.
 
@@ -314,24 +314,19 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 
 ## Phase 6: CI/CD Pipeline (GitHub Actions)
 
-- [ ] **6.1** Create service principal (minimal scope — resource group in target subscription only):
+- [x] **6.1** ~~Service principal~~ — Entra ID permissions not available. Using **publish profile** instead (no admin required).
   ```bash
-  az ad sp create-for-rbac --name "cityfix-github-deploy" \
-    --role Contributor \
-    --scopes /subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/cityfix-rg \
-    --sdk-auth
-  ```
-  > **Save the full JSON output immediately** — `clientSecret` cannot be retrieved again.
-  >
-  > **Edge case — Entra ID permission:** Creating a service principal requires `Application Administrator` or `Application.ReadWrite.All` in Entra ID. If blocked, ask your Azure AD admin.
-
-- [ ] **6.2** Store credentials as GitHub Secrets:
-  ```bash
-  gh secret set AZURE_CREDENTIALS < /path/to/saved-credentials.json
-  gh secret set AZURE_WEBAPP_NAME --body "cityfix-app"
+  az webapp deployment list-publishing-profiles --name cityfix-app-aj \
+    --resource-group cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID --xml > /tmp/publish-profile.xml
   ```
 
-- [ ] **6.3** Create `.github/workflows/deploy.yml`:
+- [x] **6.2** Store publish profile as GitHub Secret `AZURE_WEBAPP_PUBLISH_PROFILE`:
+  ```bash
+  gh secret set AZURE_WEBAPP_PUBLISH_PROFILE -R adjablon/city-fixer < /tmp/publish-profile.xml
+  rm /tmp/publish-profile.xml
+  ```
+
+- [x] **6.3** Create `.github/workflows/deploy.yml`:
   ```yaml
   name: Build and Deploy to Azure
 
@@ -365,20 +360,12 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
             path: target/city-fix-0.0.1-SNAPSHOT.jar
             retention-days: 30
 
-        - name: Login to Azure
-          uses: azure/login@v2
-          with:
-            creds: ${{ secrets.AZURE_CREDENTIALS }}
-
         - name: Deploy to Azure App Service
           uses: azure/webapps-deploy@v3
           with:
-            app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
+            app-name: cityfix-app-aj
+            publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
             package: target/city-fix-0.0.1-SNAPSHOT.jar
-
-        - name: Azure logout
-          if: always()
-          run: az logout
   ```
 
 - [ ] **6.4** Commit and push:
@@ -392,7 +379,7 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 
 - [ ] **6.6** Verify app after CI deploy:
   ```bash
-  curl -s https://cityfix-app.azurewebsites.net/actuator/health
+  curl -s https://cityfix-app-aj.azurewebsites.net/actuator/health
   ```
 
 > **Gate:** Push to `main` triggers green CI run. App healthy after automated deploy.
@@ -402,19 +389,15 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 ## Phase 7: Post-Deployment Hardening
 
 - [ ] **7.1** Verify all resources are tagged: `az resource list --resource-group cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID --output table`
-- [ ] **7.2** Audit for orphaned resources — expect only: `cityfix-plan`, `cityfix-app`, `cityfix-db`
+- [ ] **7.2** Audit for orphaned resources — expect only: `cityfix-plan`, `cityfix-app-aj`, `cityfix-db`
 - [ ] **7.4** Enable filesystem logging (already done in 4.3, verify it persists)
 - [ ] **7.5** Document cleanup commands for future teardown:
   ```bash
   # 1. Delete all Azure resources (App Service, Plan, PostgreSQL)
   az group delete --name cityfix-rg --subscription $AZURE_SUBSCRIPTION_ID --yes --no-wait
 
-  # 2. Delete the service principal (Phase 6.1)
-  az ad sp delete --id <clientId-from-phase-6.1>
-
-  # 3. Delete GitHub Secrets (optional — harmless if left)
-  gh secret delete AZURE_CREDENTIALS
-  gh secret delete AZURE_WEBAPP_NAME
+  # 2. Delete GitHub Secrets (optional — harmless if left)
+  gh secret delete AZURE_WEBAPP_PUBLISH_PROFILE
   ```
 
 > **Gate:** All resources tagged. No orphans. Rollback procedure documented (re-run previous CI workflow or manual `az webapp deploy` with old JAR).
@@ -431,7 +414,7 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 | DB over public internet | Firewall + SSL `sslmode=require`; VNet post-MVP | 2.3, 3.4 |
 | Logs lost after 12h | Filesystem logging; check same-day; Log Analytics post-MVP | 4.3 |
 | JVM OOM on B1 (1.75 GB) | `JAVA_OPTS` caps heap at 1 GB | 1.4 |
-| Service principal blocks CI | Step-by-step setup; fallback to `Website Contributor` role | 6.1 |
+| Entra ID blocks CI auth | Used publish profile instead of service principal | 6.1 |
 | Cost creep | Quarterly resource group audit | 7.2 |
 
 ---
@@ -443,8 +426,8 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 | Subscription ID | `5559456a-f30a-4505-a478-a3b978daabb7` |
 | Resource group | `cityfix-rg` |
 | App Service plan | `cityfix-plan` (B1 Linux) |
-| App Service | `cityfix-app` |
-| App URL | `https://cityfix-app.azurewebsites.net` |
+| App Service | `cityfix-app-aj` |
+| App URL | `https://cityfix-app-aj.azurewebsites.net` |
 | DB server | `cityfix-db` (`cityfix-db.postgres.database.azure.com`) |
 | DB name | `cityfix` |
 | DB admin | `cityfixadmin` |
@@ -466,7 +449,7 @@ az webapp config appsettings set --name cityfix-app --resource-group cityfix-rg 
 
 ## Verification (end-to-end)
 
-1. `curl https://cityfix-app.azurewebsites.net/` returns `"CityFix is running"`
-2. `curl https://cityfix-app.azurewebsites.net/actuator/health` returns `{"status":"UP"}` with DB component healthy
+1. `curl https://cityfix-app-aj.azurewebsites.net/` returns `"CityFix is running"`
+2. `curl https://cityfix-app-aj.azurewebsites.net/actuator/health` returns `{"status":"UP"}` with DB component healthy
 3. Push a trivial change to `main` — GitHub Actions builds and deploys automatically
 4. `az resource list --resource-group cityfix-rg` shows exactly 3 resources, all tagged
