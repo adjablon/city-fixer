@@ -31,8 +31,9 @@ jobs:
           retention-days: 30
 
       - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: cityfix-app-aj
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: target/city-fix-0.0.1-SNAPSHOT.jar
+        run: |
+          curl -X POST \
+            -u "${{ secrets.AZURE_WEBAPP_PUBLISH_USER }}:${{ secrets.AZURE_WEBAPP_PUBLISH_PASS }}" \
+            --data-binary @target/city-fix-0.0.1-SNAPSHOT.jar \
+            -H "Content-Type: application/octet-stream" \
+            "https://cityfix-app-aj.scm.azurewebsites.net/api/publish?type=jar"
