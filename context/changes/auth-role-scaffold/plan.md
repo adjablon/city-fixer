@@ -388,13 +388,13 @@ No data migration needed. This is the first entity in the system. Hibernate `ddl
 
 #### Automated
 
-- [ ] 1.1 Application compiles with new dependencies: `./mvnw compile`
-- [ ] 1.2 Application starts with Spring Security on classpath
+- [x] 1.1 Application compiles with new dependencies: `./mvnw compile`
+- [x] 1.2 Application starts with Spring Security on classpath
 
 #### Manual
 
-- [ ] 1.3 Admin user seeded on startup with ADMIN_EMAIL/ADMIN_PASSWORD env vars
-- [ ] 1.4 Seeder skips silently without env vars
+- [x] 1.3 Admin user seeded on startup with ADMIN_EMAIL/ADMIN_PASSWORD env vars
+- [x] 1.4 Seeder skips silently without env vars
 
 ### Phase 2: Security Configuration and Auth Service
 
