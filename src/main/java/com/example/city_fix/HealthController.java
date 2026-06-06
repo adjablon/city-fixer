@@ -1,13 +1,13 @@
 package com.example.city_fix;
 
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@Controller
 public class HealthController {
 
     @GetMapping("/")
     public String root() {
-        return "CityFix is running";
+        return "redirect:/login";
     }
 }

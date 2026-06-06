@@ -388,28 +388,28 @@ No data migration needed. This is the first entity in the system. Hibernate `ddl
 
 #### Automated
 
-- [x] 1.1 Application compiles with new dependencies: `./mvnw compile`
-- [x] 1.2 Application starts with Spring Security on classpath
+- [x] 1.1 Application compiles with new dependencies: `./mvnw compile` — 4485944
+- [x] 1.2 Application starts with Spring Security on classpath — 4485944
 
 #### Manual
 
-- [x] 1.3 Admin user seeded on startup with ADMIN_EMAIL/ADMIN_PASSWORD env vars
-- [x] 1.4 Seeder skips silently without env vars
+- [x] 1.3 Admin user seeded on startup with ADMIN_EMAIL/ADMIN_PASSWORD env vars — 4485944
+- [x] 1.4 Seeder skips silently without env vars — 4485944
 
 ### Phase 2: Security Configuration and Auth Service
 
 #### Automated
 
-- [ ] 2.1 Application compiles: `./mvnw compile`
-- [ ] 2.2 Application starts without errors: `./mvnw spring-boot:run`
+- [x] 2.1 Application compiles: `./mvnw compile`
+- [x] 2.2 Application starts without errors: `./mvnw spring-boot:run`
 
 #### Manual
 
-- [ ] 2.3 POST /api/auth/login with valid creds returns 200 JSON + JSESSIONID
-- [ ] 2.4 POST /api/auth/login with invalid creds returns 401 JSON
-- [ ] 2.5 GET /api/auth/me without session returns 401 JSON
-- [ ] 2.6 GET / without session redirects to /login
-- [ ] 2.7 GET /actuator/health accessible without auth
+- [x] 2.3 POST /api/auth/login with valid creds returns 200 JSON + JSESSIONID
+- [x] 2.4 POST /api/auth/login with invalid creds returns 401 JSON
+- [x] 2.5 GET /api/auth/me without session returns 401 JSON
+- [x] 2.6 GET / without session redirects to /login
+- [x] 2.7 GET /actuator/health accessible without auth
 
 ### Phase 3: Auth Endpoints and Thymeleaf Pages
 
