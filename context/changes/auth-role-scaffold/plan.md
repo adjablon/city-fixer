@@ -448,9 +448,9 @@ No data migration needed. This is the first entity in the system. Hibernate `ddl
 
 #### Automated
 
-- [x] 4.1 All tests pass: `./mvnw clean test`
-- [x] 4.2 Application packages: `./mvnw clean package`
+- [x] 4.1 All tests pass: `./mvnw clean test` — d3d2504
+- [x] 4.2 Application packages: `./mvnw clean package` — d3d2504
 
 #### Manual
 
-- [x] 4.3 Full end-to-end walkthrough: register → login → /api/auth/me → logout → 401
+- [x] 4.3 Full end-to-end walkthrough: register → login → /api/auth/me → logout → 401 — d3d2504
