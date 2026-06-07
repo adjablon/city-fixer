@@ -415,18 +415,18 @@ No data migration needed. This is the first entity in the system. Hibernate `ddl
 
 #### Automated
 
-- [ ] 3.1 Application compiles: `./mvnw compile`
-- [ ] 3.2 Application starts cleanly: `./mvnw spring-boot:run`
+- [x] 3.1 Application compiles: `./mvnw compile`
+- [x] 3.2 Application starts cleanly: `./mvnw spring-boot:run`
 
 #### Manual
 
-- [ ] 3.3 Browser registration flow works (register → redirect to login)
-- [ ] 3.4 Browser login flow works (login → authenticated landing)
-- [ ] 3.5 GET /api/auth/me with session returns user profile JSON
-- [ ] 3.6 POST /api/auth/register via curl creates user (201)
-- [ ] 3.7 POST /api/auth/register with duplicate email returns 409
-- [ ] 3.8 POST /api/auth/register with short password returns 400
-- [ ] 3.9 Logout works from both web UI and API
+- [x] 3.3 Browser registration flow works (register → redirect to login)
+- [x] 3.4 Browser login flow works (login → authenticated landing)
+- [x] 3.5 GET /api/auth/me with session returns user profile JSON
+- [x] 3.6 POST /api/auth/register via curl creates user (201)
+- [x] 3.7 POST /api/auth/register with duplicate email returns 409
+- [x] 3.8 POST /api/auth/register with short password returns 400
+- [x] 3.9 Logout works from both web UI and API
 
 ### Phase 4: Tests and Verification
 

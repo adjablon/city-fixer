@@ -8,6 +8,6 @@ public class HealthController {
 
     @GetMapping("/")
     public String root() {
-        return "redirect:/login";
+        return "home";
     }
 }

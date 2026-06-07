@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityFix</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 80px auto; padding: 0 20px; }
+        h1 { text-align: center; }
+        .info { background: #f0f9ff; padding: 16px; border-radius: 8px; margin: 24px 0; }
+        .actions { text-align: center; margin-top: 24px; }
+        .actions a { display: inline-block; padding: 10px 20px; background: #dc2626; color: white; text-decoration: none; border-radius: 4px; }
+        .actions a:hover { background: #b91c1c; }
+    </style>
+</head>
+<body>
+    <h1>CityFix</h1>
+    <div class="info">
+        <p>Logged in as <strong sec:authentication="name">user</strong></p>
+        <p>This is a placeholder landing page. The map view will replace it in S-01.</p>
+    </div>
+    <div class="actions">
+        <a th:href="@{/logout}">Log out</a>
+    </div>
+</body>
+</html>
