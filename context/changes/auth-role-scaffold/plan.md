@@ -285,17 +285,33 @@ Add the REST registration endpoint, the `/api/auth/me` endpoint, Thymeleaf login
 
 ### Overview
 
-Add MockMvc integration tests covering registration, login, role enforcement, and unauthorized access. Update the existing smoke test to work with Spring Security on the classpath. After this phase, the auth scaffold is fully verified and the CI pipeline passes.
+Add Testcontainers with PostgreSQL for integration tests, MockMvc integration tests covering registration, login, role enforcement, and unauthorized access. Update the existing smoke test to work with Spring Security on the classpath. After this phase, the auth scaffold is fully verified against a real PostgreSQL database and the CI pipeline passes.
 
 ### Changes Required:
 
-#### 1. Auth API integration tests
+#### 1. Testcontainers dependencies and base config
+
+**File**: `pom.xml`
+
+**Intent**: Add Testcontainers PostgreSQL so integration tests run against a real PostgreSQL container instead of an in-memory DB. Spring Boot 4's `@ServiceConnection` auto-configures the datasource from the container.
+
+**Contract**: Add `spring-boot-testcontainers` and `org.testcontainers:postgresql` (test scope). The BOM version is managed by Spring Boot.
+
+#### 2. Shared test configuration
+
+**File**: `src/test/java/com/example/city_fix/TestcontainersConfig.java`
+
+**Intent**: Single shared PostgreSQL container definition reused across all test classes via `@Import`. Avoids spinning up a new container per test class.
+
+**Contract**: `@TestConfiguration` class with a `@Bean @ServiceConnection PostgreSQLContainer<?>` that uses `postgres:17` image (matching compose.yaml). Annotated with `@RestartScope` so the container survives context reloads within a test run.
+
+#### 3. Auth API integration tests
 
 **File**: `src/test/java/com/example/city_fix/auth/AuthControllerTest.java`
 
-**Intent**: Test the REST auth endpoints with MockMvc. Verify registration creates a user, login returns a session, invalid credentials are rejected, and `/api/auth/me` returns the current user or 401.
+**Intent**: Test the REST auth endpoints with MockMvc against a real PostgreSQL. Verify registration creates a user, login returns a session, invalid credentials are rejected, and `/api/auth/me` returns the current user or 401.
 
-**Contract**: `@WebMvcTest(AuthController.class)` (or `@SpringBootTest` with `@AutoConfigureMockMvc` if service layer wiring is needed). Test cases:
+**Contract**: `@SpringBootTest` with `@AutoConfigureMockMvc` and `@Import(TestcontainersConfig.class)`. Test cases:
 - Register with valid data → 201
 - Register with duplicate email → 409
 - Register with short password → 400
@@ -304,24 +320,24 @@ Add MockMvc integration tests covering registration, login, role enforcement, an
 - `/api/auth/me` authenticated → 200 with user data
 - `/api/auth/me` unauthenticated → 401
 
-#### 2. Security enforcement tests
+#### 4. Security enforcement tests
 
 **File**: `src/test/java/com/example/city_fix/config/SecurityConfigTest.java`
 
 **Intent**: Verify that the security chains enforce role-based access correctly. Protected API endpoints reject unauthenticated requests with 401 JSON (not redirect). Public endpoints (register, login, actuator health) are accessible.
 
-**Contract**: `@SpringBootTest` with `@AutoConfigureMockMvc`. Use `@WithMockUser(roles = "RESIDENT")`, `@WithMockUser(roles = "ADMIN")`, and unauthenticated requests to verify:
+**Contract**: `@SpringBootTest` with `@AutoConfigureMockMvc` and `@Import(TestcontainersConfig.class)`. Use `@WithMockUser(roles = "RESIDENT")`, `@WithMockUser(roles = "ADMIN")`, and unauthenticated requests to verify:
 - Public paths (`/api/auth/register`, `/api/auth/login`, `/login`, `/register`, `/actuator/health`) are accessible without auth
 - Protected API paths return 401 JSON when unauthenticated
 - Web paths redirect to `/login` when unauthenticated
 
-#### 3. Update existing smoke test
+#### 5. Update existing smoke test
 
 **File**: `src/test/java/com/example/city_fix/CityFixApplicationTests.java`
 
-**Intent**: The existing `contextLoads` test may need adjustment now that Spring Security is on the classpath (security auto-config changes the application context). Ensure it still passes.
+**Intent**: The existing `contextLoads` test needs the Testcontainers PostgreSQL to load the full application context. Add `@Import(TestcontainersConfig.class)` so it can connect to the database.
 
-**Contract**: If the test fails due to security auto-config, add the necessary test properties or mock beans. The test should verify that the full application context loads successfully with security configured.
+**Contract**: Add `@Import(TestcontainersConfig.class)` to the existing class. The test should verify that the full application context loads successfully with security and database configured.
 
 ### Success Criteria:
 
@@ -415,26 +431,26 @@ No data migration needed. This is the first entity in the system. Hibernate `ddl
 
 #### Automated
 
-- [x] 3.1 Application compiles: `./mvnw compile`
-- [x] 3.2 Application starts cleanly: `./mvnw spring-boot:run`
+- [x] 3.1 Application compiles: `./mvnw compile` — bccedcb
+- [x] 3.2 Application starts cleanly: `./mvnw spring-boot:run` — bccedcb
 
 #### Manual
 
-- [x] 3.3 Browser registration flow works (register → redirect to login)
-- [x] 3.4 Browser login flow works (login → authenticated landing)
-- [x] 3.5 GET /api/auth/me with session returns user profile JSON
-- [x] 3.6 POST /api/auth/register via curl creates user (201)
-- [x] 3.7 POST /api/auth/register with duplicate email returns 409
-- [x] 3.8 POST /api/auth/register with short password returns 400
-- [x] 3.9 Logout works from both web UI and API
+- [x] 3.3 Browser registration flow works (register → redirect to login) — bccedcb
+- [x] 3.4 Browser login flow works (login → authenticated landing) — bccedcb
+- [x] 3.5 GET /api/auth/me with session returns user profile JSON — bccedcb
+- [x] 3.6 POST /api/auth/register via curl creates user (201) — bccedcb
+- [x] 3.7 POST /api/auth/register with duplicate email returns 409 — bccedcb
+- [x] 3.8 POST /api/auth/register with short password returns 400 — bccedcb
+- [x] 3.9 Logout works from both web UI and API — bccedcb
 
 ### Phase 4: Tests and Verification
 
 #### Automated
 
-- [ ] 4.1 All tests pass: `./mvnw clean test`
-- [ ] 4.2 Application packages: `./mvnw clean package`
+- [x] 4.1 All tests pass: `./mvnw clean test`
+- [x] 4.2 Application packages: `./mvnw clean package`
 
 #### Manual
 
-- [ ] 4.3 Full end-to-end walkthrough: register → login → /api/auth/me → logout → 401
+- [x] 4.3 Full end-to-end walkthrough: register → login → /api/auth/me → logout → 401
