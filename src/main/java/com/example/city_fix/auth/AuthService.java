@@ -4,6 +4,7 @@ import com.example.city_fix.user.Role;
 import com.example.city_fix.user.User;
 import com.example.city_fix.user.UserRepository;
 import java.util.regex.Pattern;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +36,14 @@ public class AuthService {
         }
 
         User user = new User(email, passwordEncoder.encode(password), Role.RESIDENT);
-        return userRepository.save(user);
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            // existsByEmail() + save() is not atomic: a concurrent registration with the
+            // same email can slip between the check and the insert, hitting the DB unique
+            // constraint instead. Translate to the same 409 as the pre-check path.
+            throw new EmailAlreadyExistsException(email);
+        }
     }
 
     public static class EmailAlreadyExistsException extends RuntimeException {

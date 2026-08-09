@@ -54,6 +54,17 @@ class AuthControllerTest extends TestcontainersConfig {
     }
 
     @Test
+    void registerWithInvalidEmail_returns400() throws Exception {
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"email": "notanemail", "password": "password123"}
+                    """))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.message").value("Invalid email format"));
+    }
+
+    @Test
     void registerWithShortPassword_returns400() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)

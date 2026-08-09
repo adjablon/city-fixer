@@ -1,65 +1,64 @@
 <!-- PLAN-REVIEW-REPORT -->
-# Plan Review: Auth and Role Scaffold
+# Plan Review: Auth and Role Scaffold (Post-Implementation)
 
 - **Plan**: context/changes/auth-role-scaffold/plan.md
 - **Mode**: Deep
-- **Date**: 2026-06-06
-- **Verdict**: REVISE → SOUND (after fixes)
-- **Findings**: 1 critical, 2 warnings, 1 observation
+- **Date**: 2026-06-07
+- **Verdict**: SOUND
+- **Findings**: 0 critical, 2 warnings, 2 observations
 
 ## Verdicts
 
 | Dimension | Verdict |
 |-----------|---------|
-| End-State Alignment | WARNING |
+| End-State Alignment | PASS |
 | Lean Execution | PASS |
 | Architectural Fitness | WARNING |
 | Blind Spots | WARNING |
-| Plan Completeness | WARNING |
+| Plan Completeness | PASS |
 
 ## Grounding
 
-8/8 paths verified, 3/3 symbols verified, brief↔plan consistent. Deep verification: 4 Spring Security 7 / Boot 4 framework claims checked (3 confirmed, 1 flagged). Progress↔Phase: all 4 phases + 21 steps match.
+17/17 paths ✓, brief↔plan ✓
 
 ## Findings
 
-### F1 — formLogin not configured for email-based authentication
-
-- **Severity**: ❌ CRITICAL
-- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
-- **Dimension**: End-State Alignment / Plan Completeness
-- **Location**: Phase 2 — Security Configuration (item 5) + Phase 3 — Login/Register templates
-- **Detail**: Spring Security's formLogin reads `request.getParameter("username")` by default. Phase 3's templates specify "email + password fields", implying `<input name="email">`. Without `.usernameParameter("email")` on both formLogin configurations, login silently fails with 401.
-- **Fix**: Add `.usernameParameter("email")` to both formLogin configurations in Phase 2.
-- **Decision**: ACCEPTED — user noted the login form is defined in Phase 3; the implementer will align form field names with security config during template implementation.
-
-### F2 — CustomUserDetailsService contract doesn't carry user ID
+### F1 — CSRF not configured for future API endpoints
 
 - **Severity**: ⚠️ WARNING
 - **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
 - **Dimension**: Architectural Fitness
-- **Location**: Phase 2 (CustomUserDetailsService) → Phase 3 (/me endpoint)
-- **Detail**: Phase 2 originally specified standard UserDetails (username + authorities, no ID). Phase 3's /me endpoint returns {id, email, role}. The bridge was missing — S-01 and S-02 also need the current user's ID.
-- **Fix A ⭐ Recommended**: Create a custom UserDetails wrapper in Phase 2.
-- **Fix B**: Query UserRepository.findByEmail(principal.getName()) in controllers.
-- **Decision**: FIXED via Fix A — added `CustomUserDetails` wrapper class (Phase 2, item 1) and updated `CustomUserDetailsService` (item 2) to return it.
+- **Location**: SecurityConfig.java — API chain CSRF config
+- **Detail**: Plan specifies `.csrf(csrf -> csrf.spa())` for the API chain. Implementation uses `.csrf(csrf -> csrf.ignoringRequestMatchers("/api/auth/**"))`. Auth endpoints work, but future S-01 endpoints (POST /api/reports) will hit the default CSRF filter with no token mechanism — clients have no way to obtain a CSRF token, so all mutating API requests will get 403.
+- **Fix**: Add `.csrf(csrf -> csrf.spa().ignoringRequestMatchers("/api/auth/**"))` before S-01 implementation. This restores the SPA CSRF token cookie while keeping auth endpoints exempt.
+- **Decision**: FIXED — `.spa().ignoringRequestMatchers("/api/auth/**")` applied to SecurityConfig.java API chain. Verified with 3 new tests in SecurityConfigTest: `csrfEnforced_onNonAuthApiPath_returns403`, `csrfNotEnforced_onAuthApiPath`, `csrfSpaCookie_isSetOnResponse`. All 17 tests pass.
 
-### F3 — thymeleaf-extras-springsecurity6 artifact likely wrong for SS7
+### F2 — Email uniqueness race produces 500 instead of 409
 
 - **Severity**: ⚠️ WARNING
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
 - **Dimension**: Blind Spots
-- **Location**: Phase 1 — Maven dependencies (item 1)
-- **Detail**: The upstream GitHub repo (thymeleaf/thymeleaf-extras-springsecurity) was archived April 2026. The dialect was likely absorbed into Thymeleaf core or the Boot 4 starter. Other framework claims verified clean: `spring-boot-starter-security-test` ✓, `.csrf(csrf -> csrf.spa())` ✓, `PathPatternRequestMatcher` ✓.
-- **Fix**: Added note to Phase 1 item 1 to verify artifact name against the Boot 4.0.6 BOM at implementation time.
-- **Decision**: FIXED — verification note added to plan.
+- **Location**: AuthService.java:33–37, AuthController.java:63–77
+- **Detail**: existsByEmail() + save() has a TOCTOU race. The DB unique constraint prevents duplicates, but DataIntegrityViolationException is unhandled — concurrent duplicate registration returns 500 instead of 409. Low probability for MVP but easy to fix.
+- **Fix**: Catch DataIntegrityViolationException in AuthController.register() and return 409.
+- **Decision**: FIXED — DataIntegrityViolationException caught in AuthService.register() around save() and translated to EmailAlreadyExistsException (controller already maps it to 409; keeps HTTP mapping single-sourced). Verified with new unit test AuthServiceTest.registerWhenConcurrentDuplicateHitsUniqueConstraint_throwsEmailAlreadyExists — passes.
 
-### F4 — No local development database dependency or setup
+### F3 — Email format validation added but not tested
 
 - **Severity**: 💡 OBSERVATION
 - **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
-- **Dimension**: Plan Completeness
-- **Location**: Phase 1 — Local dev properties (item 6)
-- **Detail**: Plan mentioned "H2 or local PostgreSQL" without specifying. No Docker Compose or setup instructions existed.
-- **Fix**: Added Docker Compose with PostgreSQL to Phase 1 (new item 6) and updated local dev properties (item 7) to point at the Docker instance.
-- **Decision**: FIXED — local dev uses PostgreSQL via Docker Compose.
+- **Dimension**: Blind Spots
+- **Location**: AuthService.java:27–29, AuthControllerTest.java
+- **Detail**: Email format validation was added during Phase 3 but no test verifies that an invalid email (e.g. "notanemail") returns 400 with "Invalid email format". Add one test case.
+- **Fix**: Add test case `registerWithInvalidEmail_returns400()` to AuthControllerTest.
+- **Decision**: FIXED — registerWithInvalidEmail_returns400() added to AuthControllerTest; asserts 400 + "Invalid email format". Full AuthControllerTest suite (8 tests) passes. Note: on this machine Testcontainers needs `DOCKER_HOST=unix://$HOME/.rd/docker.sock` and `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock` (Rancher Desktop).
+
+### F4 — Admin seeder checks by email, not by role
+
+- **Severity**: 💡 OBSERVATION
+- **Impact**: 🏃 LOW — quick decision; fix is obvious and narrowly scoped
+- **Dimension**: Blind Spots
+- **Location**: AdminSeeder.java:40
+- **Detail**: Plan says "skips if any ADMIN role user already exists" but code checks existsByEmail(adminEmail). Changing the env var creates a second admin. Acceptable for solo-dev MVP.
+- **Fix**: Either document this behavior or add existsByRole(Role) to UserRepository and check that instead.
+- **Decision**: ACCEPTED — by-email check acceptable for solo-dev MVP; changing SEED_ADMIN_EMAIL intentionally creating a second admin is a known, tolerated behavior.

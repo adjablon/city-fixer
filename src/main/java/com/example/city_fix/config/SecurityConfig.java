@@ -51,6 +51,7 @@ public class SecurityConfig {
                 })
             )
             .csrf(csrf -> csrf
+                .spa()
                 .ignoringRequestMatchers("/api/auth/**")
             );
 

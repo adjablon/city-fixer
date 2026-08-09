@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -72,5 +73,30 @@ class SecurityConfigTest extends TestcontainersConfig {
     void protectedWebPath_accessible_whenAuthenticated() throws Exception {
         mockMvc.perform(get("/"))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    void csrfEnforced_onNonAuthApiPath_returns403() throws Exception {
+        mockMvc.perform(post("/api/something")
+                .contentType("application/json")
+                .content("{}"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void csrfNotEnforced_onAuthApiPath() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                .contentType("application/json")
+                .content("""
+                    {"email": "x@x.com", "password": "wrong"}
+                    """))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void csrfSpaCookie_isSetOnResponse() throws Exception {
+        mockMvc.perform(get("/api/auth/me"))
+            .andExpect(cookie().exists("XSRF-TOKEN"))
+            .andExpect(cookie().httpOnly("XSRF-TOKEN", false));
     }
 }
