@@ -3,7 +3,7 @@ project: "CityFix"
 version: 1
 status: draft
 created: 2026-06-04
-updated: 2026-06-04
+updated: 2026-09-03
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -29,7 +29,7 @@ City residents have no official channel to report infrastructure problems — po
 
 | ID   | Change ID                | Outcome (user can …)                                                                          | Prerequisites | PRD refs                              | Status   |
 | ---- | ------------------------ | --------------------------------------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
-| F-01 | auth-role-scaffold       | (foundation) Auth with role-based access; residents can register and log in                    | —             | FR-001, Access Control                | ready    |
+| F-01 | auth-role-scaffold       | (foundation) Auth with role-based access; residents can register and log in                    | —             | FR-001, Access Control                | done     |
 | S-01 | resident-reports-problem | Place a map pin, submit a report with description/category/photo, and see it in "my reports"  | F-01          | US-01, FR-003, FR-004, FR-005, FR-008 | proposed |
 | S-02 | staff-triages-reports    | View all reports on a map and change their status; resident sees the update                    | F-01, S-01    | US-02, FR-006, FR-007                 | proposed |
 | S-03 | admin-manages-staff      | Create and deactivate office staff accounts                                                    | F-01          | FR-002                                | proposed |
@@ -69,7 +69,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - How is the first admin account provisioned (seed script, env var, manual insert)? — Owner: user. Block: no.
 - **Risk:** Sequenced first because every route requires authentication (PRD: "Unauthenticated users: no access"). Spring Security configuration complexity could eat time on a tight 3-week budget.
-- **Status:** ready
+- **Status:** done
 
 ## Slices
 
@@ -136,3 +136,5 @@ Foundations below assume these are present and do NOT re-scaffold them.
 ## Done
 
 (Empty on first generation. `/10x-archive` appends entries here when a change is archived.)
+
+- **F-01: (foundation) Auth with role-based access configured; residents can register and log in; role model (resident, staff, admin) in place.** — Archived 2026-09-03 → `context/archive/2026-06-06-auth-role-scaffold/`. Lesson: —.
