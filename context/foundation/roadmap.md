@@ -3,7 +3,7 @@ project: "CityFix"
 version: 1
 status: draft
 created: 2026-06-04
-updated: 2026-09-03
+updated: 2026-09-04
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -30,7 +30,7 @@ City residents have no official channel to report infrastructure problems — po
 | ID   | Change ID                | Outcome (user can …)                                                                          | Prerequisites | PRD refs                              | Status   |
 | ---- | ------------------------ | --------------------------------------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
 | F-01 | auth-role-scaffold       | (foundation) Auth with role-based access; residents can register and log in                    | —             | FR-001, Access Control                | done     |
-| S-01 | resident-reports-problem | Place a map pin, submit a report with description/category/photo, and see it in "my reports"  | F-01          | US-01, FR-003, FR-004, FR-005, FR-008 | proposed |
+| S-01 | resident-reports-problem | Place a map pin, submit a report with description/category/photo, and see it in "my reports"  | F-01          | US-01, FR-003, FR-004, FR-005, FR-008 | planning |
 | S-02 | staff-triages-reports    | View all reports on a map and change their status; resident sees the update                    | F-01, S-01    | US-02, FR-006, FR-007                 | proposed |
 | S-03 | admin-manages-staff      | Create and deactivate office staff accounts                                                    | F-01          | FR-002                                | proposed |
 
@@ -83,7 +83,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Sequenced immediately after auth because it carries the core tech risk — map library integration is the acknowledged biggest technical challenge (FR-003 Socratic: "Map integration is the biggest tech risk"). Also introduces the frontend layer (absent in baseline) and the report data model.
-- **Status:** proposed
+- **Status:** planning
 
 ### S-02: Staff triages reports and updates status
 
