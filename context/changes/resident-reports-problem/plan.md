@@ -457,24 +457,24 @@ Photo storage sits behind `ReportService`, so a later move to Azure Blob Storage
 
 #### Automated
 
-- [x] 1.1 Application compiles: `./mvnw compile`
-- [x] 1.2 Application starts and Hibernate creates `reports` and `report_photos`
-- [x] 1.3 Existing test suite still passes: `./mvnw test`
+- [x] 1.1 Application compiles: `./mvnw compile` — d00c02d
+- [x] 1.2 Application starts and Hibernate creates `reports` and `report_photos` — d00c02d
+- [x] 1.3 Existing test suite still passes: `./mvnw test` — d00c02d
 
 #### Manual
 
-- [x] 1.4 `report_photos.image_data` is `bytea`, not `oid`
-- [x] 1.5 `reports` columns and `reporter_id` FK are correct
-- [x] 1.6 Multipart and `cityfix.map.*` properties resolve in both profiles
+- [x] 1.4 `report_photos.image_data` is `bytea`, not `oid` — d00c02d
+- [x] 1.5 `reports` columns and `reporter_id` FK are correct — d00c02d
+- [x] 1.6 Multipart and `cityfix.map.*` properties resolve in both profiles — d00c02d
 
 ### Phase 2: Service Layer, Photo Validation and Ownership Scoping
 
 #### Automated
 
-- [ ] 2.1 Application compiles: `./mvnw compile`
-- [ ] 2.2 `ReportServiceTest` passes
-- [ ] 2.3 `PhotoValidatorTest` passes
-- [ ] 2.4 Full suite still green: `./mvnw test`
+- [x] 2.1 Application compiles: `./mvnw compile`
+- [x] 2.2 `ReportServiceTest` passes
+- [x] 2.3 `PhotoValidatorTest` passes
+- [x] 2.4 Full suite still green: `./mvnw test`
 
 ### Phase 3: Submission — Map Page and POST
 
