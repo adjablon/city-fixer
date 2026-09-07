@@ -457,15 +457,15 @@ Photo storage sits behind `ReportService`, so a later move to Azure Blob Storage
 
 #### Automated
 
-- [ ] 1.1 Application compiles: `./mvnw compile`
-- [ ] 1.2 Application starts and Hibernate creates `reports` and `report_photos`
-- [ ] 1.3 Existing test suite still passes: `./mvnw test`
+- [x] 1.1 Application compiles: `./mvnw compile`
+- [x] 1.2 Application starts and Hibernate creates `reports` and `report_photos`
+- [x] 1.3 Existing test suite still passes: `./mvnw test`
 
 #### Manual
 
-- [ ] 1.4 `report_photos.image_data` is `bytea`, not `oid`
-- [ ] 1.5 `reports` columns and `reporter_id` FK are correct
-- [ ] 1.6 Multipart and `cityfix.map.*` properties resolve in both profiles
+- [x] 1.4 `report_photos.image_data` is `bytea`, not `oid`
+- [x] 1.5 `reports` columns and `reporter_id` FK are correct
+- [x] 1.6 Multipart and `cityfix.map.*` properties resolve in both profiles
 
 ### Phase 2: Service Layer, Photo Validation and Ownership Scoping
 

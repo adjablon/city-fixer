@@ -1,9 +1,9 @@
 ---
 change_id: resident-reports-problem
 title: Resident reports problem
-status: plan_reviewed
+status: implementing
 created: 2026-09-03
-updated: 2026-09-06
+updated: 2026-09-07
 archived_at: null
 ---
 
