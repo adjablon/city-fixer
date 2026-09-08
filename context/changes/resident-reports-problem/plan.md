@@ -513,15 +513,15 @@ Photo storage sits behind `ReportService`, so a later move to Azure Blob Storage
 
 #### Automated
 
-- [x] 5.1 `ReportWebControllerTest` passes
-- [x] 5.2 Cross-owner access returns 404 for `/reports/{id}` and `/reports/{id}/photo`
-- [x] 5.3 Unauthenticated `/reports/**` redirects to `/login`
-- [x] 5.4 Oversize and wrong-type uploads rejected at the HTTP layer
-- [x] 5.5 Full suite passes: `./mvnw clean test`
-- [x] 5.6 Application packages: `./mvnw clean package`
+- [x] 5.1 `ReportWebControllerTest` passes — a32208d
+- [x] 5.2 Cross-owner access returns 404 for `/reports/{id}` and `/reports/{id}/photo` — a32208d
+- [x] 5.3 Unauthenticated `/reports/**` redirects to `/login` — a32208d
+- [x] 5.4 Oversize and wrong-type uploads rejected at the HTTP layer — a32208d
+- [x] 5.5 Full suite passes: `./mvnw clean test` — a32208d
+- [x] 5.6 Application packages: `./mvnw clean package` — a32208d
 
 #### Manual
 
-- [x] 5.7 End-to-end walkthrough: register → login → pin → submit with photo → list → detail
-- [x] 5.8 Second account gets 404 on the first account's report and photo URLs
-- [x] 5.9 Flow works in a mobile browser at 375 px, geolocation over HTTPS
+- [x] 5.7 End-to-end walkthrough: register → login → pin → submit with photo → list → detail — a32208d
+- [x] 5.8 Second account gets 404 on the first account's report and photo URLs — a32208d
+- [x] 5.9 Flow works in a mobile browser at 375 px, geolocation over HTTPS — a32208d
