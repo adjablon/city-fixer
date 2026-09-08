@@ -471,29 +471,29 @@ Photo storage sits behind `ReportService`, so a later move to Azure Blob Storage
 
 #### Automated
 
-- [x] 2.1 Application compiles: `./mvnw compile`
-- [x] 2.2 `ReportServiceTest` passes
-- [x] 2.3 `PhotoValidatorTest` passes
-- [x] 2.4 Full suite still green: `./mvnw test`
+- [x] 2.1 Application compiles: `./mvnw compile` — 284e837
+- [x] 2.2 `ReportServiceTest` passes — 284e837
+- [x] 2.3 `PhotoValidatorTest` passes — 284e837
+- [x] 2.4 Full suite still green: `./mvnw test` — 284e837
 
 ### Phase 3: Submission — Map Page and POST
 
 #### Automated
 
-- [ ] 3.1 Application compiles: `./mvnw compile`
-- [ ] 3.2 `GET /css/leaflet.css` and `GET /js/leaflet.js` return 200 unauthenticated
-- [ ] 3.3 Full suite still green: `./mvnw test`
+- [x] 3.1 Application compiles: `./mvnw compile`
+- [x] 3.2 `GET /css/leaflet.css` and `GET /js/leaflet.js` return 200 unauthenticated
+- [x] 3.3 Full suite still green: `./mvnw test`
 
 #### Manual
 
-- [ ] 3.4 Map renders on `/reports/new` with tiles and OSM attribution
-- [ ] 3.5 Clicking the map places and moves a single pin, populating hidden inputs
-- [ ] 3.6 "Use my location" works; denial shows a readable message
-- [ ] 3.7 Valid submit redirects and persists correct coordinates, category, status `NEW`
-- [ ] 3.8 Multipart POST with a photo succeeds with no 403 (CSRF/multipart ordering)
-- [ ] 3.9 File over 2 MB rejected; pin and description survive
-- [ ] 3.10 Non-image renamed to `.jpg` rejected
-- [ ] 3.11 Page usable at 375 px viewport width
+- [x] 3.4 Map renders on `/reports/new` with tiles and OSM attribution
+- [x] 3.5 Clicking the map places and moves a single pin, populating hidden inputs
+- [x] 3.6 "Use my location" works; denial shows a readable message
+- [x] 3.7 Valid submit redirects and persists correct coordinates, category, status `NEW`
+- [x] 3.8 Multipart POST with a photo succeeds with no 403 (CSRF/multipart ordering)
+- [x] 3.9 File over 2 MB rejected; pin and description survive
+- [x] 3.10 Non-image renamed to `.jpg` rejected
+- [x] 3.11 Page usable at 375 px viewport width
 
 ### Phase 4: My Reports — List, Detail and Photo Serving
 

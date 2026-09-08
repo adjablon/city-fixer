@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityFix — Report a problem</title>
+    <link rel="stylesheet" th:href="@{/css/leaflet.css}">
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+        h1 { text-align: center; }
+        form { display: flex; flex-direction: column; gap: 12px; }
+        label { font-weight: 600; }
+        textarea, select {
+            padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;
+            font-family: inherit; width: 100%; box-sizing: border-box;
+        }
+        textarea { min-height: 96px; resize: vertical; }
+        button { padding: 10px; background: #2563eb; color: white; border: none; border-radius: 4px; font-size: 1rem; cursor: pointer; }
+        button:hover:enabled { background: #1d4ed8; }
+        button:disabled { background: #94a3b8; cursor: not-allowed; }
+        button.secondary { background: #475569; }
+        button.secondary:hover:enabled { background: #334155; }
+        #map { height: 45vh; min-height: 260px; border-radius: 8px; border: 1px solid #ccc; }
+        .error { color: #dc2626; background: #fef2f2; padding: 8px 12px; border-radius: 4px; }
+        .hint { color: #475569; font-size: 0.875rem; margin: 0; }
+        .warning { color: #dc2626; font-size: 0.875rem; margin: 0; }
+        .link { text-align: center; margin-top: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Report a problem</h1>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+    <form th:action="@{/reports}" method="post" enctype="multipart/form-data">
+        <label for="map">Location</label>
+        <p class="hint">Tap the map to place a pin, then drag it to fine-tune.</p>
+        <div id="map"
+             th:attr="data-default-lat=${defaultLat},
+                      data-default-lng=${defaultLng},
+                      data-default-zoom=${defaultZoom}"></div>
+        <button type="button" id="locate" class="secondary">Use my location</button>
+        <p id="map-message" class="warning"></p>
+        <input type="hidden" id="latitude" name="latitude" th:value="${reportForm.latitude}">
+        <input type="hidden" id="longitude" name="longitude" th:value="${reportForm.longitude}">
+
+        <label for="description">Description</label>
+        <textarea id="description" name="description" maxlength="2000" required
+                  placeholder="What is the problem?" th:text="${reportForm.description}"></textarea>
+
+        <label for="category">Category</label>
+        <select id="category" name="category" required>
+            <option value="">Choose a category…</option>
+            <option th:each="category : ${categories}"
+                    th:value="${category}"
+                    th:text="${category.label}"
+                    th:selected="${category == reportForm.category}"></option>
+        </select>
+
+        <label for="photo">Photo (optional, max 2 MB)</label>
+        <input type="file" id="photo" name="photo" accept="image/jpeg,image/png,image/webp">
+        <p id="photo-message" class="warning"></p>
+
+        <button type="submit" id="submit-report" disabled>Submit report</button>
+    </form>
+    <p class="link"><a th:href="@{/reports}">My reports</a> · <a th:href="@{/}">Home</a></p>
+    <script th:src="@{/js/leaflet.js}"></script>
+    <script th:src="@{/js/report-map.js}"></script>
+</body>
+</html>

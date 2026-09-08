@@ -49,6 +49,15 @@ class SecurityConfigTest extends TestcontainersConfig {
     }
 
     @Test
+    void vendoredMapAssets_accessibleWithoutAuth() throws Exception {
+        mockMvc.perform(get("/css/leaflet.css"))
+            .andExpect(status().isOk());
+
+        mockMvc.perform(get("/js/leaflet.js"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
     void actuatorHealth_accessibleWithoutAuth() throws Exception {
         mockMvc.perform(get("/actuator/health"))
             .andExpect(status().isOk());
