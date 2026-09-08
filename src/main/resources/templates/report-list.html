@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityFix — My reports</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+        h1 { text-align: center; }
+        .actions { text-align: center; margin-bottom: 24px; }
+        .actions a {
+            display: inline-block; padding: 10px 20px; background: #2563eb; color: white;
+            border-radius: 4px; text-decoration: none; font-size: 1rem;
+        }
+        .actions a:hover { background: #1d4ed8; }
+        .empty { background: #f0f9ff; padding: 16px; border-radius: 8px; text-align: center; }
+        ul.reports { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
+        li.report { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; }
+        li.report a { text-decoration: none; color: inherit; display: block; }
+        li.report:hover { border-color: #2563eb; }
+        .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .category { font-weight: 600; }
+        .created { color: #475569; font-size: 0.875rem; margin-left: auto; }
+        .summary { margin: 0; color: #334155; }
+        .badge { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+        .badge-new { background: #dbeafe; color: #1d4ed8; }
+        .badge-in_progress { background: #fef3c7; color: #b45309; }
+        .badge-resolved { background: #dcfce7; color: #15803d; }
+        .badge-rejected { background: #fee2e2; color: #b91c1c; }
+        .link { text-align: center; margin-top: 24px; }
+    </style>
+</head>
+<body>
+    <h1>My reports</h1>
+    <div class="actions">
+        <a th:href="@{/reports/new}">Report a problem</a>
+    </div>
+
+    <div th:if="${#lists.isEmpty(reports)}" class="empty">
+        <p>You have not reported anything yet.</p>
+        <p><a th:href="@{/reports/new}">Report your first problem</a></p>
+    </div>
+
+    <ul class="reports" th:unless="${#lists.isEmpty(reports)}">
+        <li class="report" th:each="report : ${reports}">
+            <a th:href="@{/reports/{id}(id=${report.id})}">
+                <div class="meta">
+                    <span class="category" th:text="${report.category.label}">Category</span>
+                    <span th:class="|badge badge-${#strings.toLowerCase(report.status)}|"
+                          th:text="${report.status.label}">Status</span>
+                    <span class="created" th:text="${dateFormatter.format(report.createdAt)}">date</span>
+                </div>
+                <p class="summary" th:text="${#strings.abbreviate(report.description, 100)}">Description</p>
+            </a>
+        </li>
+    </ul>
+
+    <p class="link"><a th:href="@{/}">Home</a></p>
+</body>
+</html>

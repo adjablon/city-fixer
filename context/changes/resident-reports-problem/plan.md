@@ -480,34 +480,34 @@ Photo storage sits behind `ReportService`, so a later move to Azure Blob Storage
 
 #### Automated
 
-- [x] 3.1 Application compiles: `./mvnw compile`
-- [x] 3.2 `GET /css/leaflet.css` and `GET /js/leaflet.js` return 200 unauthenticated
-- [x] 3.3 Full suite still green: `./mvnw test`
+- [x] 3.1 Application compiles: `./mvnw compile` — 6007082
+- [x] 3.2 `GET /css/leaflet.css` and `GET /js/leaflet.js` return 200 unauthenticated — 6007082
+- [x] 3.3 Full suite still green: `./mvnw test` — 6007082
 
 #### Manual
 
-- [x] 3.4 Map renders on `/reports/new` with tiles and OSM attribution
-- [x] 3.5 Clicking the map places and moves a single pin, populating hidden inputs
-- [x] 3.6 "Use my location" works; denial shows a readable message
-- [x] 3.7 Valid submit redirects and persists correct coordinates, category, status `NEW`
-- [x] 3.8 Multipart POST with a photo succeeds with no 403 (CSRF/multipart ordering)
-- [x] 3.9 File over 2 MB rejected; pin and description survive
-- [x] 3.10 Non-image renamed to `.jpg` rejected
-- [x] 3.11 Page usable at 375 px viewport width
+- [x] 3.4 Map renders on `/reports/new` with tiles and OSM attribution — 6007082
+- [x] 3.5 Clicking the map places and moves a single pin, populating hidden inputs — 6007082
+- [x] 3.6 "Use my location" works; denial shows a readable message — 6007082
+- [x] 3.7 Valid submit redirects and persists correct coordinates, category, status `NEW` — 6007082
+- [x] 3.8 Multipart POST with a photo succeeds with no 403 (CSRF/multipart ordering) — 6007082
+- [x] 3.9 File over 2 MB rejected; pin and description survive — 6007082
+- [x] 3.10 Non-image renamed to `.jpg` rejected — 6007082
+- [x] 3.11 Page usable at 375 px viewport width — 6007082
 
 ### Phase 4: My Reports — List, Detail and Photo Serving
 
 #### Automated
 
-- [ ] 4.1 Application compiles: `./mvnw compile`
-- [ ] 4.2 Full suite still green: `./mvnw test`
+- [x] 4.1 Application compiles: `./mvnw compile`
+- [x] 4.2 Full suite still green: `./mvnw test`
 
 #### Manual
 
-- [ ] 4.3 `/reports` lists own reports newest-first, with an empty state for a fresh account
-- [ ] 4.4 `/reports/{id}` shows description, category, status and the pin on a read-only map
-- [ ] 4.5 Photo displays when present; absent photo renders cleanly
-- [ ] 4.6 Both pages usable at 375 px viewport width
+- [x] 4.3 `/reports` lists own reports newest-first, with an empty state for a fresh account
+- [x] 4.4 `/reports/{id}` shows description, category, status and the pin on a read-only map
+- [x] 4.5 Photo displays when present; absent photo renders cleanly
+- [x] 4.6 Both pages usable at 375 px viewport width
 
 ### Phase 5: Integration Tests, Security Tests and Verification
 

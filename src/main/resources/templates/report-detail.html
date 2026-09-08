@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityFix — Report</title>
+    <link rel="stylesheet" th:href="@{/css/leaflet.css}">
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+        h1 { text-align: center; }
+        .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+        .category { font-weight: 600; font-size: 1.125rem; }
+        .created { color: #475569; font-size: 0.875rem; margin-left: auto; }
+        .badge { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+        .badge-new { background: #dbeafe; color: #1d4ed8; }
+        .badge-in_progress { background: #fef3c7; color: #b45309; }
+        .badge-resolved { background: #dcfce7; color: #15803d; }
+        .badge-rejected { background: #fee2e2; color: #b91c1c; }
+        h2 { font-size: 0.875rem; text-transform: uppercase; color: #475569; margin-bottom: 4px; }
+        .description { white-space: pre-wrap; margin-top: 0; }
+        #detail-map { height: 35vh; min-height: 220px; border-radius: 8px; border: 1px solid #ccc; }
+        .photo { width: 100%; border-radius: 8px; border: 1px solid #ccc; display: block; }
+        .link { text-align: center; margin-top: 24px; }
+    </style>
+</head>
+<body>
+    <h1>Report</h1>
+    <div class="meta">
+        <span class="category" th:text="${report.category.label}">Category</span>
+        <span th:class="|badge badge-${#strings.toLowerCase(report.status)}|"
+              th:text="${report.status.label}">Status</span>
+        <span class="created" th:text="${dateFormatter.format(report.createdAt)}">date</span>
+    </div>
+
+    <h2>Description</h2>
+    <p class="description" th:text="${report.description}">Description</p>
+
+    <h2>Location</h2>
+    <div id="detail-map"
+         th:attr="data-lat=${report.latitude}, data-lng=${report.longitude}"></div>
+
+    <div th:if="${hasPhoto}">
+        <h2>Photo</h2>
+        <img class="photo" th:src="@{/reports/{id}/photo(id=${report.id})}" alt="Photo of the reported problem">
+    </div>
+
+    <p class="link"><a th:href="@{/reports}">My reports</a> · <a th:href="@{/}">Home</a></p>
+    <script th:src="@{/js/leaflet.js}"></script>
+    <script th:src="@{/js/report-detail-map.js}"></script>
+</body>
+</html>
