@@ -499,29 +499,29 @@ Photo storage sits behind `ReportService`, so a later move to Azure Blob Storage
 
 #### Automated
 
-- [x] 4.1 Application compiles: `./mvnw compile`
-- [x] 4.2 Full suite still green: `./mvnw test`
+- [x] 4.1 Application compiles: `./mvnw compile` — 31bd942
+- [x] 4.2 Full suite still green: `./mvnw test` — 31bd942
 
 #### Manual
 
-- [x] 4.3 `/reports` lists own reports newest-first, with an empty state for a fresh account
-- [x] 4.4 `/reports/{id}` shows description, category, status and the pin on a read-only map
-- [x] 4.5 Photo displays when present; absent photo renders cleanly
-- [x] 4.6 Both pages usable at 375 px viewport width
+- [x] 4.3 `/reports` lists own reports newest-first, with an empty state for a fresh account — 31bd942
+- [x] 4.4 `/reports/{id}` shows description, category, status and the pin on a read-only map — 31bd942
+- [x] 4.5 Photo displays when present; absent photo renders cleanly — 31bd942
+- [x] 4.6 Both pages usable at 375 px viewport width — 31bd942
 
 ### Phase 5: Integration Tests, Security Tests and Verification
 
 #### Automated
 
-- [ ] 5.1 `ReportWebControllerTest` passes
-- [ ] 5.2 Cross-owner access returns 404 for `/reports/{id}` and `/reports/{id}/photo`
-- [ ] 5.3 Unauthenticated `/reports/**` redirects to `/login`
-- [ ] 5.4 Oversize and wrong-type uploads rejected at the HTTP layer
-- [ ] 5.5 Full suite passes: `./mvnw clean test`
-- [ ] 5.6 Application packages: `./mvnw clean package`
+- [x] 5.1 `ReportWebControllerTest` passes
+- [x] 5.2 Cross-owner access returns 404 for `/reports/{id}` and `/reports/{id}/photo`
+- [x] 5.3 Unauthenticated `/reports/**` redirects to `/login`
+- [x] 5.4 Oversize and wrong-type uploads rejected at the HTTP layer
+- [x] 5.5 Full suite passes: `./mvnw clean test`
+- [x] 5.6 Application packages: `./mvnw clean package`
 
 #### Manual
 
-- [ ] 5.7 End-to-end walkthrough: register → login → pin → submit with photo → list → detail
-- [ ] 5.8 Second account gets 404 on the first account's report and photo URLs
-- [ ] 5.9 Flow works in a mobile browser at 375 px, geolocation over HTTPS
+- [x] 5.7 End-to-end walkthrough: register → login → pin → submit with photo → list → detail
+- [x] 5.8 Second account gets 404 on the first account's report and photo URLs
+- [x] 5.9 Flow works in a mobile browser at 375 px, geolocation over HTTPS
