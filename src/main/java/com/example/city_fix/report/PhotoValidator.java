@@ -17,7 +17,7 @@ public class PhotoValidator {
     private static final byte[] WEBP_FORMAT_SIGNATURE = {0x57, 0x45, 0x42, 0x50};
     private static final int WEBP_FORMAT_OFFSET = 8;
 
-    public String validateAndDetectContentType(MultipartFile photo) {
+    public ValidatedPhoto validate(MultipartFile photo) {
         if (photo == null || photo.isEmpty()) {
             throw new ReportService.InvalidPhotoException("Please choose a photo file.");
         }
@@ -27,16 +27,19 @@ public class PhotoValidator {
             throw new ReportService.InvalidPhotoException("Photo must be 2 MB or smaller.");
         }
 
+        // The bytes are read once, here, and handed back to the caller: re-reading the
+        // spooled part to persist it would double the transient heap per upload and leave
+        // room for the validated bytes and the stored bytes to differ.
         byte[] content = readBytes(photo);
         if (matchesAt(content, 0, JPEG_SIGNATURE)) {
-            return MediaType.IMAGE_JPEG_VALUE;
+            return new ValidatedPhoto(MediaType.IMAGE_JPEG_VALUE, content);
         }
         if (matchesAt(content, 0, PNG_SIGNATURE)) {
-            return MediaType.IMAGE_PNG_VALUE;
+            return new ValidatedPhoto(MediaType.IMAGE_PNG_VALUE, content);
         }
         if (matchesAt(content, 0, WEBP_RIFF_SIGNATURE)
             && matchesAt(content, WEBP_FORMAT_OFFSET, WEBP_FORMAT_SIGNATURE)) {
-            return WEBP_CONTENT_TYPE;
+            return new ValidatedPhoto(WEBP_CONTENT_TYPE, content);
         }
         throw new ReportService.InvalidPhotoException("Photo must be a JPEG, PNG or WebP image.");
     }
@@ -45,7 +48,7 @@ public class PhotoValidator {
         try {
             return photo.getBytes();
         } catch (IOException e) {
-            throw new ReportService.InvalidPhotoException("Photo could not be read.", e);
+            throw new ReportService.PhotoUnreadableException("Could not read the uploaded photo", e);
         }
     }
 
@@ -59,5 +62,8 @@ public class PhotoValidator {
             }
         }
         return true;
+    }
+
+    public record ValidatedPhoto(String contentType, byte[] data) {
     }
 }

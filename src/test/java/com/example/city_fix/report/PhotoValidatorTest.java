@@ -20,7 +20,7 @@ class PhotoValidatorTest {
     void jpegSignature_isAcceptedAsJpeg() {
         MultipartFile photo = photoWithBytes(new byte[] {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0x00, 0x10});
 
-        assertThat(photoValidator.validateAndDetectContentType(photo)).isEqualTo("image/jpeg");
+        assertThat(photoValidator.validate(photo).contentType()).isEqualTo("image/jpeg");
     }
 
     @Test
@@ -28,7 +28,7 @@ class PhotoValidatorTest {
         MultipartFile photo = photoWithBytes(
             new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00});
 
-        assertThat(photoValidator.validateAndDetectContentType(photo)).isEqualTo("image/png");
+        assertThat(photoValidator.validate(photo).contentType()).isEqualTo("image/png");
     }
 
     @Test
@@ -37,7 +37,7 @@ class PhotoValidatorTest {
         System.arraycopy("RIFF".getBytes(StandardCharsets.US_ASCII), 0, content, 0, 4);
         System.arraycopy("WEBP".getBytes(StandardCharsets.US_ASCII), 0, content, 8, 4);
 
-        assertThat(photoValidator.validateAndDetectContentType(photoWithBytes(content))).isEqualTo("image/webp");
+        assertThat(photoValidator.validate(photoWithBytes(content)).contentType()).isEqualTo("image/webp");
     }
 
     @Test
@@ -46,7 +46,7 @@ class PhotoValidatorTest {
         System.arraycopy("RIFF".getBytes(StandardCharsets.US_ASCII), 0, content, 0, 4);
         System.arraycopy("AVI ".getBytes(StandardCharsets.US_ASCII), 0, content, 8, 4);
 
-        assertThatThrownBy(() -> photoValidator.validateAndDetectContentType(photoWithBytes(content)))
+        assertThatThrownBy(() -> photoValidator.validate(photoWithBytes(content)))
             .isInstanceOf(ReportService.InvalidPhotoException.class);
     }
 
@@ -55,7 +55,7 @@ class PhotoValidatorTest {
         MockMultipartFile photo = new MockMultipartFile(
             "photo", "photo.jpg", "image/jpeg", "#!/bin/sh\nrm -rf /".getBytes(StandardCharsets.UTF_8));
 
-        assertThatThrownBy(() -> photoValidator.validateAndDetectContentType(photo))
+        assertThatThrownBy(() -> photoValidator.validate(photo))
             .isInstanceOf(ReportService.InvalidPhotoException.class)
             .hasMessageContaining("JPEG, PNG or WebP");
     }
@@ -64,13 +64,13 @@ class PhotoValidatorTest {
     void emptyFile_isRejected() {
         MockMultipartFile photo = new MockMultipartFile("photo", "empty.jpg", "image/jpeg", new byte[0]);
 
-        assertThatThrownBy(() -> photoValidator.validateAndDetectContentType(photo))
+        assertThatThrownBy(() -> photoValidator.validate(photo))
             .isInstanceOf(ReportService.InvalidPhotoException.class);
     }
 
     @Test
     void nullFile_isRejected() {
-        assertThatThrownBy(() -> photoValidator.validateAndDetectContentType(null))
+        assertThatThrownBy(() -> photoValidator.validate(null))
             .isInstanceOf(ReportService.InvalidPhotoException.class);
     }
 
@@ -80,7 +80,7 @@ class PhotoValidatorTest {
         when(photo.isEmpty()).thenReturn(false);
         when(photo.getSize()).thenReturn(3L * 1024 * 1024);
 
-        assertThatThrownBy(() -> photoValidator.validateAndDetectContentType(photo))
+        assertThatThrownBy(() -> photoValidator.validate(photo))
             .isInstanceOf(ReportService.InvalidPhotoException.class)
             .hasMessageContaining("2 MB");
 
@@ -94,7 +94,7 @@ class PhotoValidatorTest {
         content[1] = (byte) 0xD8;
         content[2] = (byte) 0xFF;
 
-        assertThat(photoValidator.validateAndDetectContentType(photoWithBytes(content))).isEqualTo("image/jpeg");
+        assertThat(photoValidator.validate(photoWithBytes(content)).contentType()).isEqualTo("image/jpeg");
     }
 
     private static MockMultipartFile photoWithBytes(byte[] content) {

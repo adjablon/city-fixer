@@ -62,6 +62,34 @@ class ReportWebControllerTest extends TestcontainersConfig {
     }
 
     @Test
+    void submitWithPhoto_storesTheBytesUnchanged() throws Exception {
+        MockHttpSession session = authenticate("submit-roundtrip@example.com");
+        // Deliberately past the 255-byte default @Column length: a column mapped as
+        // anything but bytea would truncate here, and ddl-auto=update cannot repair that
+        // once the column exists.
+        byte[] original = new byte[1024 * 1024];
+        new java.util.Random(42).nextBytes(original);
+        original[0] = (byte) 0xFF;
+        original[1] = (byte) 0xD8;
+        original[2] = (byte) 0xFF;
+
+        mockMvc.perform(multipart("/reports")
+                .file(new MockMultipartFile("photo", "photo.jpg", "image/jpeg", original))
+                .param("latitude", "52.190000")
+                .param("longitude", "21.090000")
+                .param("description", "Report whose photo must round-trip intact")
+                .param("category", "POTHOLE")
+                .session(session)
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection());
+
+        Report saved = findByDescription("Report whose photo must round-trip intact");
+        ReportPhoto storedPhoto = reportPhotoRepository.findByReportId(saved.getId()).orElseThrow();
+        assertThat(storedPhoto.getContentType()).isEqualTo("image/jpeg");
+        assertThat(storedPhoto.getImageData()).isEqualTo(original);
+    }
+
+    @Test
     void submitWithoutPhoto_redirectsAndPersistsNoPhotoRow() throws Exception {
         MockHttpSession session = authenticate("submit-nophoto@example.com");
 

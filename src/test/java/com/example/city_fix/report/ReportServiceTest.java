@@ -89,7 +89,8 @@ class ReportServiceTest {
         when(reportRepository.save(any(Report.class))).thenAnswer(invocation -> invocation.getArgument(0));
         MockMultipartFile photo = new MockMultipartFile(
             "photo", "photo.jpg", "image/jpeg", "fake-image-bytes".getBytes(StandardCharsets.UTF_8));
-        when(photoValidator.validateAndDetectContentType(photo)).thenReturn("image/jpeg");
+        when(photoValidator.validate(photo)).thenReturn(
+            new PhotoValidator.ValidatedPhoto("image/jpeg", "fake-image-bytes".getBytes(StandardCharsets.UTF_8)));
 
         reportService.create(52.1, 21.0, "Trash pile", Category.TRASH, REPORTER_ID, photo);
 
@@ -103,7 +104,7 @@ class ReportServiceTest {
     void createWithInvalidPhoto_persistsNoReport() {
         MockMultipartFile photo = new MockMultipartFile(
             "photo", "photo.jpg", "image/jpeg", "not-an-image".getBytes(StandardCharsets.UTF_8));
-        when(photoValidator.validateAndDetectContentType(photo))
+        when(photoValidator.validate(photo))
             .thenThrow(new ReportService.InvalidPhotoException("Photo must be a JPEG, PNG or WebP image."));
 
         assertThatThrownBy(() -> reportService.create(52.1, 21.0, "Sign down", Category.SIGN, REPORTER_ID, photo))
@@ -134,6 +135,16 @@ class ReportServiceTest {
         when(reportRepository.findByIdAndReporterId(1L, OTHER_REPORTER_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> reportService.getOwnPhoto(1L, OTHER_REPORTER_ID))
+            .isInstanceOf(ReportService.ReportNotFoundException.class);
+
+        verifyNoInteractions(reportPhotoRepository);
+    }
+
+    @Test
+    void hasPhotoForForeignReporter_throwsBeforeTouchingThePhotoRepository() {
+        when(reportRepository.findByIdAndReporterId(1L, OTHER_REPORTER_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reportService.hasPhoto(1L, OTHER_REPORTER_ID))
             .isInstanceOf(ReportService.ReportNotFoundException.class);
 
         verifyNoInteractions(reportPhotoRepository);

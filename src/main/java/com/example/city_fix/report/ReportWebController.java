@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 public class ReportWebController {
+
+    private static final Logger log = LoggerFactory.getLogger(ReportWebController.class);
 
     // Thymeleaf has no #temporals dialect on this classpath, so the view is handed a
     // zone-bound formatter rather than formatting the Instant itself.
@@ -74,7 +78,17 @@ public class ReportWebController {
                 photo
             );
         } catch (ReportService.InvalidPhotoException e) {
+            // The photo failed validation: the message describes what the user must change,
+            // and there is nothing here for an operator to act on.
             model.addAttribute("error", e.getMessage());
+            addFormModel(model);
+            return "report-new";
+        } catch (ReportService.PhotoUnreadableException e) {
+            // Infrastructure failure, not user error — the upload may be a perfectly good
+            // photo the server could not read. Log it, and keep the user-facing text generic
+            // rather than telling the reporter their file is invalid.
+            log.warn("Could not read uploaded photo for reporter {}", principal.getId(), e);
+            model.addAttribute("error", "We could not read that photo. Please try again.");
             addFormModel(model);
             return "report-new";
         }
@@ -95,7 +109,7 @@ public class ReportWebController {
                                Model model) {
         Report report = reportService.getOwn(id, principal.getId());
         model.addAttribute("report", report);
-        model.addAttribute("hasPhoto", reportService.hasPhoto(report.getId()));
+        model.addAttribute("hasPhoto", reportService.hasPhoto(report.getId(), principal.getId()));
         model.addAttribute("dateFormatter", CREATED_AT_FORMAT);
         return "report-detail";
     }

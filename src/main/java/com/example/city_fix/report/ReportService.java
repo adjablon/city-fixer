@@ -2,7 +2,6 @@ package com.example.city_fix.report;
 
 import com.example.city_fix.user.User;
 import com.example.city_fix.user.UserRepository;
-import java.io.IOException;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,13 +35,14 @@ public class ReportService {
                          Long reporterId,
                          MultipartFile photo) {
         boolean hasPhoto = photo != null && !photo.isEmpty();
-        String contentType = hasPhoto ? photoValidator.validateAndDetectContentType(photo) : null;
+        PhotoValidator.ValidatedPhoto validatedPhoto = hasPhoto ? photoValidator.validate(photo) : null;
 
         User reporter = userRepository.getReferenceById(reporterId);
         Report saved = reportRepository.save(new Report(latitude, longitude, description, category, reporter));
 
-        if (hasPhoto) {
-            reportPhotoRepository.save(new ReportPhoto(saved, contentType, readBytes(photo)));
+        if (validatedPhoto != null) {
+            reportPhotoRepository.save(
+                new ReportPhoto(saved, validatedPhoto.contentType(), validatedPhoto.data()));
         }
         return saved;
     }
@@ -64,16 +64,11 @@ public class ReportService {
             .orElseThrow(() -> new ReportNotFoundException(reportId));
     }
 
-    public boolean hasPhoto(Long reportId) {
-        return reportPhotoRepository.existsByReportId(reportId);
-    }
-
-    private static byte[] readBytes(MultipartFile photo) {
-        try {
-            return photo.getBytes();
-        } catch (IOException e) {
-            throw new InvalidPhotoException("Photo could not be read", e);
-        }
+    public boolean hasPhoto(Long reportId, Long reporterId) {
+        // Scoped like every other read on this service: ownership is resolved here rather
+        // than trusted from the caller, so this cannot become an existence oracle.
+        Report report = getOwn(reportId, reporterId);
+        return reportPhotoRepository.existsByReportId(report.getId());
     }
 
     public static class ReportNotFoundException extends RuntimeException {
@@ -86,8 +81,12 @@ public class ReportService {
         public InvalidPhotoException(String message) {
             super(message);
         }
+    }
 
-        public InvalidPhotoException(String message, Throwable cause) {
+    // Distinct from InvalidPhotoException: the upload may be a perfectly good photo that
+    // the server failed to read. Callers must log this rather than blame the user for it.
+    public static class PhotoUnreadableException extends RuntimeException {
+        public PhotoUnreadableException(String message, Throwable cause) {
             super(message, cause);
         }
     }
