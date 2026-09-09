@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityFix — Triage reports</title>
+    <link rel="stylesheet" th:href="@{/css/leaflet.css}">
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        h1 { text-align: center; }
+        .count { text-align: center; color: #475569; margin-bottom: 16px; }
+        .empty { background: #f0f9ff; padding: 16px; border-radius: 8px; text-align: center; margin-bottom: 16px; }
+        #staff-map { height: 60vh; min-height: 320px; border-radius: 8px; border: 1px solid #ccc; }
+        .legend { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 16px; }
+        .legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: #334155; }
+        .swatch { width: 12px; height: 12px; border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 0 1px #94a3b8; }
+        /* Marker colours are the status badge palette (report-detail.html) — keep in sync
+           with STATUS_COLOURS in /js/staff-report-map.js. */
+        .swatch-new { background: #1d4ed8; }
+        .swatch-in_progress { background: #b45309; }
+        .swatch-resolved { background: #15803d; }
+        .swatch-rejected { background: #b91c1c; }
+        .popup-category { font-weight: 600; }
+        .popup-meta { color: #475569; font-size: 0.875rem; }
+        .link { text-align: center; margin-top: 24px; }
+    </style>
+</head>
+<body>
+    <h1>Triage reports</h1>
+
+    <p class="count" th:unless="${reportCount == 0}">
+        <span th:text="${reportCount}">0</span> report(s) submitted.
+    </p>
+
+    <div th:if="${reportCount == 0}" class="empty">
+        <p>No reports have been submitted yet.</p>
+    </div>
+
+    <div id="staff-map"
+         th:attr="data-reports=${reportsJson},
+                  data-default-lat=${defaultLat},
+                  data-default-lng=${defaultLng},
+                  data-default-zoom=${defaultZoom}"></div>
+
+    <div class="legend">
+        <span><i class="swatch swatch-new"></i> New</span>
+        <span><i class="swatch swatch-in_progress"></i> In progress</span>
+        <span><i class="swatch swatch-resolved"></i> Resolved</span>
+        <span><i class="swatch swatch-rejected"></i> Rejected</span>
+    </div>
+
+    <p class="link"><a th:href="@{/}">Home</a></p>
+    <script th:src="@{/js/leaflet.js}"></script>
+    <script th:src="@{/js/staff-report-map.js}"></script>
+</body>
+</html>

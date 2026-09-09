@@ -69,6 +69,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/register", "/css/**", "/js/**", "/error").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                // Gates the whole staff surface in one place, so no future /staff route can
+                // be added unprotected. ADMIN is included: the PRD grants admin everything
+                // staff can do. Must stay above anyRequest(), which would otherwise shadow it.
+                .requestMatchers("/staff/**").hasAnyRole("STAFF", "ADMIN")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form

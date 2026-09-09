@@ -479,24 +479,24 @@ Rollback is a redeploy of the previous JAR; the added column is nullable and unr
 
 #### Automated
 
-- [x] 2.1 Application compiles
-- [x] 2.2 StaffReportServiceTest passes
-- [x] 2.3 Full suite still passes
+- [x] 2.1 Application compiles — 3c61098
+- [x] 2.2 StaffReportServiceTest passes — 3c61098
+- [x] 2.3 Full suite still passes — 3c61098
 
 ### Phase 3: Staff Map Page
 
 #### Automated
 
-- [ ] 3.1 Application compiles
-- [ ] 3.2 Full suite still passes
+- [x] 3.1 Application compiles
+- [x] 3.2 Full suite still passes
 
 #### Manual
 
-- [ ] 3.3 Triage link visible to staff, hidden from residents
-- [ ] 3.4 Staff map renders all reports; resident gets 403
-- [ ] 3.5 Popup shows category, status and date; link points at the detail route
-- [ ] 3.6 Empty state renders with no reports
-- [ ] 3.7 Map usable at 375 px
+- [x] 3.3 Triage link visible to staff, hidden from residents
+- [x] 3.4 Staff map renders all reports; resident gets 403
+- [x] 3.5 Popup shows category, status and date; link points at the detail route
+- [x] 3.6 Empty state renders with no reports
+- [x] 3.7 Map usable at 375 px
 
 ### Phase 4: Staff Detail and Status Change
 
