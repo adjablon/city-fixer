@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CityFix — Report</title>
+    <title>CityFix — Triage report</title>
     <link rel="stylesheet" th:href="@{/css/leaflet.css}">
     <style>
         body { font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
@@ -18,14 +18,30 @@
         .badge-rejected { background: #fee2e2; color: #b91c1c; }
         h2 { font-size: 0.875rem; text-transform: uppercase; color: #475569; margin-bottom: 4px; }
         .description { white-space: pre-wrap; margin-top: 0; }
+        .reporter { color: #334155; margin-top: 0; }
         .updated { color: #475569; font-size: 0.875rem; }
+        /* #detail-map is a contract with /js/report-detail-map.js, which is shared with the
+           resident detail page — keep the id and the data-lat/data-lng attributes. */
         #detail-map { height: 35vh; min-height: 220px; border-radius: 8px; border: 1px solid #ccc; }
         .photo { width: 100%; border-radius: 8px; border: 1px solid #ccc; display: block; }
+        .status-form { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-top: 24px; }
+        .status-form select { padding: 8px; font-size: 1rem; border-radius: 4px; border: 1px solid #cbd5e1; }
+        .status-form button {
+            padding: 9px 20px; background: #2563eb; color: white; border: none;
+            border-radius: 4px; font-size: 1rem; cursor: pointer; margin-left: 8px;
+        }
+        .status-form button:hover { background: #1d4ed8; }
+        .flash { background: #dcfce7; color: #15803d; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
+        .flash-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
         .link { text-align: center; margin-top: 24px; }
     </style>
 </head>
 <body>
-    <h1>Report</h1>
+    <h1>Triage report</h1>
+
+    <div th:if="${statusMessage}" class="flash" th:text="${statusMessage}">Status updated.</div>
+    <div th:if="${statusError}" class="flash-error" th:text="${statusError}">Error.</div>
+
     <div class="meta">
         <span class="category" th:text="${report.category.label}">Category</span>
         <span th:class="|badge badge-${#strings.toLowerCase(report.status)}|"
@@ -37,6 +53,9 @@
         Status updated <span th:text="${dateFormatter.format(report.statusUpdatedAt)}">date</span>
     </p>
 
+    <h2>Reported by</h2>
+    <p class="reporter" th:text="${reporterEmail}">reporter@example.com</p>
+
     <h2>Description</h2>
     <p class="description" th:text="${report.description}">Description</p>
 
@@ -46,10 +65,21 @@
 
     <div th:if="${hasPhoto}">
         <h2>Photo</h2>
-        <img class="photo" th:src="@{/reports/{id}/photo(id=${report.id})}" alt="Photo of the reported problem">
+        <img class="photo" th:src="@{/staff/reports/{id}/photo(id=${report.id})}" alt="Photo of the reported problem">
     </div>
 
-    <p class="link"><a th:href="@{/reports}">My reports</a> · <a th:href="@{/}">Home</a></p>
+    <form class="status-form" th:action="@{/staff/reports/{id}/status(id=${report.id})}" method="post">
+        <label for="status"><strong>Change status</strong></label><br>
+        <select id="status" name="status">
+            <option th:each="candidate : ${statuses}"
+                    th:value="${candidate}"
+                    th:text="${candidate.label}"
+                    th:selected="${candidate == report.status}">Status</option>
+        </select>
+        <button type="submit">Update</button>
+    </form>
+
+    <p class="link"><a th:href="@{/staff/reports}">All reports</a> · <a th:href="@{/}">Home</a></p>
     <script th:src="@{/js/leaflet.js}"></script>
     <script th:src="@{/js/report-detail-map.js}"></script>
 </body>

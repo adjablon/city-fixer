@@ -487,35 +487,35 @@ Rollback is a redeploy of the previous JAR; the added column is nullable and unr
 
 #### Automated
 
-- [x] 3.1 Application compiles
-- [x] 3.2 Full suite still passes
+- [x] 3.1 Application compiles — a217049
+- [x] 3.2 Full suite still passes — a217049
 
 #### Manual
 
-- [x] 3.3 Triage link visible to staff, hidden from residents
-- [x] 3.4 Staff map renders all reports; resident gets 403
-- [x] 3.5 Popup shows category, status and date; link points at the detail route
-- [x] 3.6 Empty state renders with no reports
-- [x] 3.7 Map usable at 375 px
+- [x] 3.3 Triage link visible to staff, hidden from residents — a217049
+- [x] 3.4 Staff map renders all reports; resident gets 403 — a217049
+- [x] 3.5 Popup shows category, status and date; link points at the detail route — a217049
+- [x] 3.6 Empty state renders with no reports — a217049
+- [x] 3.7 Map usable at 375 px — a217049
 
 ### Phase 4: Staff Detail and Status Change
 
 #### Automated
 
-- [ ] 4.1 Application compiles
-- [ ] 4.2 Full suite still passes
+- [x] 4.1 Application compiles
+- [x] 4.2 Full suite still passes
 
 #### Manual
 
-- [ ] 4.3 Popup link on the staff map opens the detail page
-- [ ] 4.4 Detail page shows description, category, reporter email, photo and pin
-- [ ] 4.5 Status change confirms, updates badge and timestamp
-- [ ] 4.6 Same-status submission reports unchanged, timestamp untouched
-- [ ] 4.7 All transitions work including RESOLVED to NEW
-- [ ] 4.8 Marker colours on the staff map differ once statuses differ
-- [ ] 4.9 Resident sees new badge and Status updated line; untouched report shows none
-- [ ] 4.10 Resident gets 403 on staff detail and photo routes
-- [ ] 4.11 Detail page usable at 375 px
+- [x] 4.3 Popup link on the staff map opens the detail page
+- [x] 4.4 Detail page shows description, category, reporter email, photo and pin
+- [x] 4.5 Status change confirms, updates badge and timestamp
+- [x] 4.6 Same-status submission reports unchanged, timestamp untouched
+- [x] 4.7 All transitions work including RESOLVED to NEW
+- [x] 4.8 Marker colours on the staff map differ once statuses differ
+- [x] 4.9 Resident sees new badge and Status updated line; untouched report shows none
+- [x] 4.10 Resident gets 403 on staff detail and photo routes
+- [x] 4.11 Detail page usable at 375 px
 
 ### Phase 5: Integration Tests, Security Tests and Verification
 
