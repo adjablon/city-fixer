@@ -521,15 +521,15 @@ Rollback is a redeploy of the previous JAR; the added column is nullable and unr
 
 #### Automated
 
-- [x] 5.1 Full suite passes with clean test
-- [x] 5.2 StaffReportControllerTest passes
-- [x] 5.3 Resident denied on every staff route in both test classes
-- [x] 5.4 STAFF denied on the report create path
-- [x] 5.5 Status change visible to the reporting resident, asserted end to end
-- [x] 5.6 Application packages
+- [x] 5.1 Full suite passes with clean test — 608aa6d
+- [x] 5.2 StaffReportControllerTest passes — 608aa6d
+- [x] 5.3 Resident denied on every staff route in both test classes — 608aa6d
+- [x] 5.4 STAFF denied on the report create path — 608aa6d
+- [x] 5.5 Status change visible to the reporting resident, asserted end to end — 608aa6d
+- [x] 5.6 Application packages — 608aa6d
 
 #### Manual
 
-- [x] 5.7 Deviations section in change.md matches what was built
-- [x] 5.8 status_updated_at confirmed on the local database; pre-existing reports render
-- [x] 5.9 Full browser flow works end to end
+- [x] 5.7 Deviations section in change.md matches what was built — 608aa6d
+- [x] 5.8 status_updated_at confirmed on the local database; pre-existing reports render — 608aa6d
+- [x] 5.9 Full browser flow works end to end — 608aa6d
