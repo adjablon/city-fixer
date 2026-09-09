@@ -502,34 +502,34 @@ Rollback is a redeploy of the previous JAR; the added column is nullable and unr
 
 #### Automated
 
-- [x] 4.1 Application compiles
-- [x] 4.2 Full suite still passes
+- [x] 4.1 Application compiles — 0fa7552
+- [x] 4.2 Full suite still passes — 0fa7552
 
 #### Manual
 
-- [x] 4.3 Popup link on the staff map opens the detail page
-- [x] 4.4 Detail page shows description, category, reporter email, photo and pin
-- [x] 4.5 Status change confirms, updates badge and timestamp
-- [x] 4.6 Same-status submission reports unchanged, timestamp untouched
-- [x] 4.7 All transitions work including RESOLVED to NEW
-- [x] 4.8 Marker colours on the staff map differ once statuses differ
-- [x] 4.9 Resident sees new badge and Status updated line; untouched report shows none
-- [x] 4.10 Resident gets 403 on staff detail and photo routes
-- [x] 4.11 Detail page usable at 375 px
+- [x] 4.3 Popup link on the staff map opens the detail page — 0fa7552
+- [x] 4.4 Detail page shows description, category, reporter email, photo and pin — 0fa7552
+- [x] 4.5 Status change confirms, updates badge and timestamp — 0fa7552
+- [x] 4.6 Same-status submission reports unchanged, timestamp untouched — 0fa7552
+- [x] 4.7 All transitions work including RESOLVED to NEW — 0fa7552
+- [x] 4.8 Marker colours on the staff map differ once statuses differ — 0fa7552
+- [x] 4.9 Resident sees new badge and Status updated line; untouched report shows none — 0fa7552
+- [x] 4.10 Resident gets 403 on staff detail and photo routes — 0fa7552
+- [x] 4.11 Detail page usable at 375 px — 0fa7552
 
 ### Phase 5: Integration Tests, Security Tests and Verification
 
 #### Automated
 
-- [ ] 5.1 Full suite passes with clean test
-- [ ] 5.2 StaffReportControllerTest passes
-- [ ] 5.3 Resident denied on every staff route in both test classes
-- [ ] 5.4 STAFF denied on the report create path
-- [ ] 5.5 Status change visible to the reporting resident, asserted end to end
-- [ ] 5.6 Application packages
+- [x] 5.1 Full suite passes with clean test
+- [x] 5.2 StaffReportControllerTest passes
+- [x] 5.3 Resident denied on every staff route in both test classes
+- [x] 5.4 STAFF denied on the report create path
+- [x] 5.5 Status change visible to the reporting resident, asserted end to end
+- [x] 5.6 Application packages
 
 #### Manual
 
-- [ ] 5.7 Deviations section in change.md matches what was built
-- [ ] 5.8 status_updated_at confirmed on the local database; pre-existing reports render
-- [ ] 5.9 Full browser flow works end to end
+- [x] 5.7 Deviations section in change.md matches what was built
+- [x] 5.8 status_updated_at confirmed on the local database; pre-existing reports render
+- [x] 5.9 Full browser flow works end to end

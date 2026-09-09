@@ -85,6 +85,29 @@ class SecurityConfigTest extends TestcontainersConfig {
     }
 
     @Test
+    @WithMockUser(roles = "RESIDENT")
+    void staffPath_forbiddenToResident() throws Exception {
+        // Pinned at the config level, not only through the controller: the /staff/** matcher
+        // must stay ahead of anyRequest().authenticated(), which would otherwise shadow it.
+        mockMvc.perform(get("/staff/reports"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void staffPath_allowedToStaff() throws Exception {
+        mockMvc.perform(get("/staff/reports"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void staffPath_unauthenticated_redirectsToLogin() throws Exception {
+        mockMvc.perform(get("/staff/reports"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(header().string("Location", "/login"));
+    }
+
+    @Test
     void csrfEnforced_onNonAuthApiPath_returns403() throws Exception {
         mockMvc.perform(post("/api/something")
                 .contentType("application/json")
