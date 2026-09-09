@@ -12,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -49,6 +50,9 @@ public class ReportWebController {
         this.defaultZoom = defaultZoom;
     }
 
+    // Reporting is a resident capability (PRD Access Control); staff and admin have no
+    // requirement to file reports. The project's first method-security rule.
+    @PreAuthorize("hasRole('RESIDENT')")
     @GetMapping("/reports/new")
     public String newReportPage(Model model) {
         model.addAttribute("reportForm", new ReportForm(null, null, null, null));
@@ -56,6 +60,7 @@ public class ReportWebController {
         return "report-new";
     }
 
+    @PreAuthorize("hasRole('RESIDENT')")
     @PostMapping("/reports")
     public String createReport(@Valid @ModelAttribute("reportForm") ReportForm reportForm,
                                BindingResult bindingResult,

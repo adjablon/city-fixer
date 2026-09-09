@@ -465,23 +465,23 @@ Rollback is a redeploy of the previous JAR; the added column is nullable and unr
 
 #### Automated
 
-- [x] 1.1 Application compiles
-- [x] 1.2 ReportTest and StaffSeederTest pass
-- [x] 1.3 Full suite still passes
+- [x] 1.1 Application compiles — 6b017ba
+- [x] 1.2 ReportTest and StaffSeederTest pass — 6b017ba
+- [x] 1.3 Full suite still passes — 6b017ba
 
 #### Manual
 
-- [x] 1.4 Staff account seeded once, skipped on restart
-- [x] 1.5 status_updated_at exists and is nullable; existing rows NULL
-- [x] 1.6 Unset properties seed nothing
+- [x] 1.4 Staff account seeded once, skipped on restart — 6b017ba
+- [x] 1.5 status_updated_at exists and is nullable; existing rows NULL — 6b017ba
+- [x] 1.6 Unset properties seed nothing — 6b017ba
 
 ### Phase 2: Staff Read and Transition Service
 
 #### Automated
 
-- [ ] 2.1 Application compiles
-- [ ] 2.2 StaffReportServiceTest passes
-- [ ] 2.3 Full suite still passes
+- [x] 2.1 Application compiles
+- [x] 2.2 StaffReportServiceTest passes
+- [x] 2.3 Full suite still passes
 
 ### Phase 3: Staff Map Page
 
