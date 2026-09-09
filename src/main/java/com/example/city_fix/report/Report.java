@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 // PostgreSQL does not index a foreign key's referencing column automatically, and
@@ -48,6 +49,11 @@ public class Report {
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
+
+    // Null until staff first change the status. ddl-auto=update adds the column to the
+    // existing table but backfills nothing, so pre-S-02 reports keep NULL permanently.
+    @Column(name = "status_updated_at")
+    private Instant statusUpdatedAt;
 
     protected Report() {
     }
@@ -92,5 +98,19 @@ public class Report {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public Instant getStatusUpdatedAt() {
+        return statusUpdatedAt;
+    }
+
+    /**
+     * Moves the report to a new status. Transitions are unrestricted — any status may follow
+     * any other (PRD Open Question #1) — so this validates nothing beyond the null check.
+     */
+    public void changeStatus(ReportStatus newStatus) {
+        Objects.requireNonNull(newStatus, "newStatus must not be null");
+        this.status = newStatus;
+        this.statusUpdatedAt = Instant.now();
     }
 }
