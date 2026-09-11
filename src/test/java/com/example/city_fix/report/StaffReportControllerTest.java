@@ -108,6 +108,20 @@ class StaffReportControllerTest extends TestcontainersConfig {
     }
 
     @Test
+    void staffPhoto_isServedToStaffForAnotherUsersReport() throws Exception {
+        MockHttpSession resident = registerResident("photo-owner@example.com");
+        submitReport(resident, "Report whose photo staff must be able to fetch");
+        Long reportId = findByDescription("Report whose photo staff must be able to fetch").getId();
+
+        MockHttpSession staff = authenticateAs("photo-staff@example.com", Role.STAFF);
+
+        mockMvc.perform(get("/staff/reports/" + reportId + "/photo").session(staff))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.IMAGE_JPEG))
+            .andExpect(content().bytes(jpegBytes()));
+    }
+
+    @Test
     void staffDetail_returns404ForAMissingReport() throws Exception {
         MockHttpSession staff = authenticateAs("missing-staff@example.com", Role.STAFF);
 

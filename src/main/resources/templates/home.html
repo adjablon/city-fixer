@@ -17,7 +17,9 @@
     <h1>CityFix</h1>
     <div class="info">
         <p>Logged in as <strong sec:authentication="name">user</strong></p>
-        <p><a th:href="@{/reports/new}">Report a problem</a> — place a pin on the map and describe what is wrong.</p>
+        <p sec:authorize="hasRole('RESIDENT')">
+            <a th:href="@{/reports/new}">Report a problem</a> — place a pin on the map and describe what is wrong.
+        </p>
         <p><a th:href="@{/reports}">My reports</a> — everything you have reported so far.</p>
         <p sec:authorize="hasAnyRole('STAFF','ADMIN')">
             <a th:href="@{/staff/reports}">Triage reports</a> — every report on the map, with status changes.

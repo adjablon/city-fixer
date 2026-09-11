@@ -45,6 +45,18 @@ class AdminSeederTest {
     }
 
     @Test
+    void normalisesEmail_soTheSeededAccountMatchesLoginLookup() {
+        when(userRepository.existsByEmail("admin@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("secret-password")).thenReturn("encoded-hash");
+
+        seeder("  Admin@Example.COM  ", "secret-password").run(null);
+
+        ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(savedUser.capture());
+        assertThat(savedUser.getValue().getEmail()).isEqualTo("admin@example.com");
+    }
+
+    @Test
     void skipsSeeding_whenUserWithSeedEmailExists() {
         when(userRepository.existsByEmail("admin@example.com")).thenReturn(true);
 

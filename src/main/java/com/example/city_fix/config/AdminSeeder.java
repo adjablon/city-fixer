@@ -3,6 +3,7 @@ package com.example.city_fix.config;
 import com.example.city_fix.user.Role;
 import com.example.city_fix.user.User;
 import com.example.city_fix.user.UserRepository;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,19 +41,23 @@ public class AdminSeeder implements ApplicationRunner {
             return;
         }
 
-        if (userRepository.existsByEmail(adminEmail)) {
-            log.info("Admin seed skipped: user with email '{}' already exists", adminEmail);
+        // CustomUserDetailsService lowercases the submitted email before lookup, so a
+        // mixed-case seeded address would never match at login (lessons.md).
+        String email = adminEmail.trim().toLowerCase(Locale.ROOT);
+
+        if (userRepository.existsByEmail(email)) {
+            log.info("Admin seed skipped: user with email '{}' already exists", email);
             return;
         }
 
-        User admin = new User(adminEmail, passwordEncoder.encode(adminPassword), Role.ADMIN);
+        User admin = new User(email, passwordEncoder.encode(adminPassword), Role.ADMIN);
         try {
             userRepository.save(admin);
-            log.info("Admin account seeded for '{}'", adminEmail);
+            log.info("Admin account seeded for '{}'", email);
         } catch (DataIntegrityViolationException e) {
             // Another instance starting concurrently seeded the same admin between the
             // existsByEmail check and the insert — the account exists, so startup can proceed.
-            log.warn("Admin seed skipped: concurrent seed detected for '{}' ({})", adminEmail, e.getMessage());
+            log.warn("Admin seed skipped: concurrent seed detected for '{}' ({})", email, e.getMessage());
         }
     }
 }
