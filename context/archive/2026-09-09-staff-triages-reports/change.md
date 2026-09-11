@@ -1,10 +1,10 @@
 ---
 change_id: staff-triages-reports
 title: Staff triages reports and updates status
-status: impl_reviewed
+status: archived
 created: 2026-09-09
-updated: 2026-09-10
-archived_at: null
+updated: 2026-09-11
+archived_at: 2026-09-11T08:56:17Z
 ---
 
 ## Notes

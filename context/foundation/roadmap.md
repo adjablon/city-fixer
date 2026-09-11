@@ -3,7 +3,7 @@ project: "CityFix"
 version: 1
 status: draft
 created: 2026-06-04
-updated: 2026-09-09
+updated: 2026-09-11
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -31,7 +31,7 @@ City residents have no official channel to report infrastructure problems — po
 | ---- | ------------------------ | --------------------------------------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
 | F-01 | auth-role-scaffold       | (foundation) Auth with role-based access; residents can register and log in                    | —             | FR-001, Access Control                | done     |
 | S-01 | resident-reports-problem | Place a map pin, submit a report with description/category/photo, and see it in "my reports"  | F-01          | US-01, FR-003, FR-004, FR-005, FR-008 | done |
-| S-02 | staff-triages-reports    | View all reports on a map and change their status; resident sees the update                    | F-01, S-01    | US-02, FR-006, FR-007                 | in-progress |
+| S-02 | staff-triages-reports    | View all reports on a map and change their status; resident sees the update                    | F-01, S-01    | US-02, FR-006, FR-007                 | done |
 | S-03 | admin-manages-staff      | Create and deactivate office staff accounts                                                    | F-01          | FR-002                                | proposed |
 
 ## Streams
@@ -96,7 +96,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - What are the valid status transitions — can a report go from "new" directly to "rejected", or must it pass through "in progress" first? — Owner: user. Block: no (default to free transitions if unresolved).
 - **Risk:** Sequenced after S-01 because staff cannot triage reports that don't exist. Completes the north star — the full report-to-resolution loop. Staff map view reuses the map component from S-01 but may need different interaction patterns (viewing all reports vs placing a single pin).
-- **Status:** in-progress
+- **Status:** done
 
 ### S-03: Admin manages staff accounts
 
@@ -139,3 +139,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 - **F-01: (foundation) Auth with role-based access configured; residents can register and log in; role model (resident, staff, admin) in place.** — Archived 2026-09-03 → `context/archive/2026-06-06-auth-role-scaffold/`. Lesson: —.
 - **S-01: Resident can place a pin on a map, fill in a description, select a category, optionally attach a photo, submit the report, and see it in "my reports" with status "new".** — Archived 2026-09-09 → `context/archive/2026-09-03-resident-reports-problem/`. Lesson: Verify schema changes reach existing databases under ddl-auto=update.
+- **S-02: Office staff can view all submitted reports on a map view and change a report's status (new → in progress → resolved/rejected); the status change is visible to the resident who filed the report.** — Archived 2026-09-11 → `context/archive/2026-09-09-staff-triages-reports/`. Lesson: —.
