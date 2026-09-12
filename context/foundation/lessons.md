@@ -36,3 +36,22 @@
 - **Problem**: Bean Validation runs on the bound request value, before any service-layer normalisation. The project's shared email `@Pattern` is `^[^@\s]+@[^@\s]+\.[^@\s]+$`, which excludes whitespace, so an address pasted with a trailing space was rejected as "Invalid email format" and never reached `trim().toLowerCase()`. The admin form was therefore stricter than the `/register` form an admin already uses, which trims in `AuthService` *before* validating. Copying a DTO's constraints verbatim copied this mismatch along with them.
 - **Rule**: When a field is normalised before use, normalise it before validation too — in the record's compact constructor or a binder — so the constraint judges the value that will actually be stored. Reusing another DTO's constraints means inheriting where in the pipeline they run, not just the annotations.
 - **Applies to**: Any `@Valid` form or request DTO whose field the service later trims, lowercases, or canonicalises.
+
+## Deploy-time steps outlive the change that created them — keep them here, not in the plan
+
+- **Context**: `context/archive/2026-09-11-admin-manages-staff/plan.md` §Migration Notes (admin-manages-staff, S-03). The change recorded four steps that had to run against the deployed environment, then archived — sealing them into a read-only folder no skill will write to.
+- **Problem**: A plan's Migration Notes are the natural place to *discover* a deploy-time step and the worst place to *track* one. `/10x-archive` makes the folder immutable, so the checklist stops being actionable exactly when the change is "done" and the steps are still outstanding. Worse, the failure is silent and delayed: the code ships, CI is green, and the feature is simply unreachable in production until someone remembers. S-03 shipped an admin surface that no admin could log into, because `admin.seed.*` had never been set on App Service.
+- **Rule**: A change that needs a step run outside the repo — an env var, a manual DDL statement, a one-off backfill, a platform setting — copies that step into this file before `/10x-archive` runs, with the concrete command and how to verify it. Delete the entry once it has been performed. Archiving a change does not perform its deploy steps, and a plan is not a task tracker.
+- **Applies to**: plan (state deploy-time steps explicitly), impl review (check they have a live home), archive (copy them out before sealing the folder).
+
+### Outstanding — CityFix production (delete each line once done)
+
+These are pending actions, not rules. Until items 1 and 2 are done, the `/admin/users` surface exists in the deployed app but is unreachable.
+
+- [ ] **Set `ADMIN_EMAIL` and `ADMIN_PASSWORD`** as App Service application settings. Without them `AdminSeeder` skips and production has no admin at all. Verify by logging in and loading `/admin/users`.
+- [ ] **Backfill the `active` column** on the azure database: `UPDATE users SET active = true WHERE active IS NULL;`. Rows written before S-03 are `NULL`; `User.isActive()` reads null as active so this is tidiness rather than correctness, but a future `NOT NULL` tightening depends on it.
+- [ ] **Verify the schema reached azure**: `\d users` shows `active | boolean` and `SELECT count(*) FROM users WHERE active IS NULL;` returns 0. Per the `ddl-auto=update` rule above, a green boot is not evidence.
+- [ ] **Confirm logout leaves no stale session-registry entry** against a real servlet container. `HttpSessionEventPublisher` needs container lifecycle events that MockMvc cannot fire, so this is untestable in the suite — verified only that the listener bean is registered. If it silently fails to register, the registry leaks an entry per logout.
+- [ ] **Optional cleanup**: remove the now-unread `STAFF_EMAIL` / `STAFF_PASSWORD` App Service settings (`StaffSeeder` was deleted in S-03).
+
+> Single-instance constraint: `SessionRegistryImpl` is in-memory and per-instance, so deactivation only evicts sessions held by the instance serving the request. Correct on the current single-instance plan; scaling out requires a shared session store (Spring Session JDBC was considered and deferred).
