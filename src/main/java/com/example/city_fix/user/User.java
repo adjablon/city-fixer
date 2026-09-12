@@ -31,6 +31,12 @@ public class User {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    // Nullable on purpose: ddl-auto=update cannot add a NOT NULL column to the already
+    // populated users table. Rows written before the backfill read as null, which
+    // isActive() treats as active — see the plan's Migration Notes.
+    @Column
+    private Boolean active;
+
     protected User() {
     }
 
@@ -39,6 +45,7 @@ public class User {
         this.password = password;
         this.role = role;
         this.createdAt = Instant.now();
+        this.active = true;
     }
 
     public Long getId() {
@@ -59,5 +66,17 @@ public class User {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isActive() {
+        return active == null || active;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
     }
 }

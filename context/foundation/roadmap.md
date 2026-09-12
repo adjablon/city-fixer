@@ -3,7 +3,7 @@ project: "CityFix"
 version: 1
 status: draft
 created: 2026-06-04
-updated: 2026-09-11
+updated: 2026-09-12
 prd_version: 1
 main_goal: speed
 top_blocker: time
@@ -32,7 +32,7 @@ City residents have no official channel to report infrastructure problems — po
 | F-01 | auth-role-scaffold       | (foundation) Auth with role-based access; residents can register and log in                    | —             | FR-001, Access Control                | done     |
 | S-01 | resident-reports-problem | Place a map pin, submit a report with description/category/photo, and see it in "my reports"  | F-01          | US-01, FR-003, FR-004, FR-005, FR-008 | done |
 | S-02 | staff-triages-reports    | View all reports on a map and change their status; resident sees the update                    | F-01, S-01    | US-02, FR-006, FR-007                 | done |
-| S-03 | admin-manages-staff      | Create and deactivate office staff accounts                                                    | F-01          | FR-002                                | proposed |
+| S-03 | admin-manages-staff      | Create and deactivate office staff accounts                                                    | F-01          | FR-002                                | in-progress |
 
 ## Streams
 
@@ -108,7 +108,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Sequenced last — independent of the core report-to-resolution loop and parallelizable with S-01/S-02. Standard CRUD; lowest technical risk. First candidate to defer if time runs short, without affecting core product validation.
-- **Status:** proposed
+- **Status:** in-progress
 
 ## Backlog Handoff
 
