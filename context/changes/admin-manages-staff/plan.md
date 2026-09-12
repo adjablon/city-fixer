@@ -189,22 +189,31 @@ Adds Spring Security's session registry so a deactivated account's live session 
 
 **Contract**: Mockito. Covers: all of a principal's sessions are expired; already-expired sessions are not re-expired; a principal with no sessions is a no-op that does not throw.
 
+#### 5. Eviction integration tests (added during implementation)
+
+**File**: `src/test/java/com/example/city_fix/user/AccountDeactivationTest.java`
+
+**Intent**: Change 4's tests mock the registry, so they cannot detect the very gap this phase exists to close — a missing session registration. Only the real registry can.
+
+**Contract**: Extends the Phase 1 class with: the API login path registers its session under the expected id; expiring a deactivated user's sessions ends a live API session (401 on the next request); the same for a live browser session (redirect to `/login?expired`, covering the web chain's separate `sessionManagement` block); `formLogin` registration still happens via `RegisterSessionAuthenticationStrategy`; evicting one user leaves another's session alone. Verified by negative control — deleting the `registerNewSession` call from change 2 fails exactly the registration and API-eviction cases, the second with `expected:<401> but was:<200>`, which is the silent no-op the plan predicted.
+
+> **Deviation from plan, approved in Phase 1 for the same reason.** Manual items 2.5 and 2.7 are automated by change 5. Item 2.6 (logout leaves no stale registry entry) is **not automatable in this harness** — verified by probe during implementation: `HttpSessionEventPublisher` needs a real servlet container to fire `sessionDestroyed`, and `MockHttpSession.invalidate()` does not publish container lifecycle events, so a registry entry survives a MockMvc logout. A test pins that the listener bean is registered; the behaviour itself moves to the deploy-time checklist in Migration Notes.
+
 ### Success Criteria:
 
 #### Automated Verification:
 
 - Compiles: `./mvnw compile`
 - Session service tests pass: `./mvnw test -Dtest=UserSessionServiceTest`
+- Eviction integration tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
 - Existing auth and security tests still pass: `./mvnw test -Dtest=AuthControllerTest,SecurityConfigTest`
 - Full suite passes: `./mvnw test`
 
 #### Manual Verification:
 
-- Log in as staff in the browser, flip the row to `active = false` in psql, then call the eviction path (or restart-free equivalent) — the next page request lands on the login page rather than rendering
-- Logging out normally does not leave a stale entry behind: log in and out several times, then confirm eviction of a currently-logged-in session still behaves correctly
-- Both chains behave: an API session obtained from `POST /api/auth/login` is also evicted, confirming the registration added in change 2 works
+This phase has no manual verification items — 2.5 and 2.7 are automated as change 5, and 2.6 is not observable through MockMvc and moved to the deploy-time checklist. See the deviation note above.
 
-**Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
+**Implementation Note**: This phase closes on automated verification alone.
 
 ---
 
@@ -476,7 +485,7 @@ Wiring `isEnabled()` adds no query — the flag rides along on the `User` alread
 
 **New production configuration.** `ADMIN_EMAIL` and `ADMIN_PASSWORD` must be set on App Service, which they are not today — without them the deployed app has no admin and the new surface is unreachable. This is the concrete answer to PRD Open Question #2.
 
-**Deploy-time checklist (does not gate this change).** This change closes on local verification. Before or immediately after the first deploy that carries it: (1) set `ADMIN_EMAIL` / `ADMIN_PASSWORD` on App Service; (2) run the backfill against the azure database and verify with `\d users` plus `SELECT count(*) FROM users WHERE active IS NULL;` returning 0 — these are Phase 1's former manual items 1.5 and 1.6; (3) repeat manual testing steps 4-7 there; (4) optionally remove the now-unread `STAFF_EMAIL` / `STAFF_PASSWORD` variables. Until (1) and (2) are done, the admin surface exists in production but is unreachable.
+**Deploy-time checklist (does not gate this change).** This change closes on local verification. Before or immediately after the first deploy that carries it: (1) set `ADMIN_EMAIL` / `ADMIN_PASSWORD` on App Service; (2) run the backfill against the azure database and verify with `\d users` plus `SELECT count(*) FROM users WHERE active IS NULL;` returning 0 — these are Phase 1's former manual items 1.5 and 1.6; (3) repeat manual testing steps 4-7 there, and confirm that repeated login/logout cycles leave no stale registry entries — Phase 2's former manual item 2.6, which needs a real servlet container; (4) optionally remove the now-unread `STAFF_EMAIL` / `STAFF_PASSWORD` variables. Until (1) and (2) are done, the admin surface exists in production but is unreachable.
 
 **Single-instance constraint.** `SessionRegistryImpl` is in-memory and per-instance. On a scaled-out App Service plan, deactivating a user would only expire sessions held by the instance handling the request; other instances would keep theirs until the flag blocked them at next login on that instance. The deployment is single-instance today, so this is a documented boundary rather than a live defect — scaling out would require Spring Session JDBC, which was explicitly considered and deferred.
 
@@ -503,11 +512,11 @@ Wiring `isEnabled()` adds no query — the flag rides along on the `User` alread
 
 #### Automated
 
-- [x] 1.1 Compiles: `./mvnw compile`
-- [x] 1.2 Entity tests pass: `./mvnw test -Dtest=UserTest`
-- [x] 1.3 Existing auth tests still pass: `./mvnw test -Dtest=AuthControllerTest,AuthServiceTest,SecurityConfigTest`
-- [x] 1.4 Full suite passes: `./mvnw test`
-- [x] 1.5 Deactivation login-blocking tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
+- [x] 1.1 Compiles: `./mvnw compile` — 759a2f1
+- [x] 1.2 Entity tests pass: `./mvnw test -Dtest=UserTest` — 759a2f1
+- [x] 1.3 Existing auth tests still pass: `./mvnw test -Dtest=AuthControllerTest,AuthServiceTest,SecurityConfigTest` — 759a2f1
+- [x] 1.4 Full suite passes: `./mvnw test` — 759a2f1
+- [x] 1.5 Deactivation login-blocking tests pass: `./mvnw test -Dtest=AccountDeactivationTest` — 759a2f1
 
 #### Manual
 
@@ -517,16 +526,15 @@ _None — 1.7 automated as `AccountDeactivationTest`; the schema checks moved to
 
 #### Automated
 
-- [ ] 2.1 Compiles: `./mvnw compile`
-- [ ] 2.2 Session service tests pass: `./mvnw test -Dtest=UserSessionServiceTest`
-- [ ] 2.3 Existing auth and security tests still pass: `./mvnw test -Dtest=AuthControllerTest,SecurityConfigTest`
-- [ ] 2.4 Full suite passes: `./mvnw test`
+- [x] 2.1 Compiles: `./mvnw compile`
+- [x] 2.2 Session service tests pass: `./mvnw test -Dtest=UserSessionServiceTest`
+- [x] 2.3 Existing auth and security tests still pass: `./mvnw test -Dtest=AuthControllerTest,SecurityConfigTest`
+- [x] 2.4 Full suite passes: `./mvnw test`
+- [x] 2.5 Eviction integration tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
 
 #### Manual
 
-- [ ] 2.5 A logged-in browser session is dropped at the login page after the account is deactivated
-- [ ] 2.6 Repeated login/logout cycles leave no stale registry entries that break a later eviction
-- [ ] 2.7 A session obtained from `POST /api/auth/login` is also evicted
+_None — 2.5 and 2.7 automated in `AccountDeactivationTest`; 2.6 is not observable through MockMvc and moved to the deploy-time checklist._
 
 ### Phase 3: Admin service and controller
 

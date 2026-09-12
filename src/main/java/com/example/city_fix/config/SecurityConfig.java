@@ -11,9 +11,12 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Configuration
 @EnableWebSecurity
@@ -24,6 +27,26 @@ public class SecurityConfig {
 
     public SecurityConfig(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+    }
+
+    /**
+     * Tracks live sessions so deactivating an account can end them. In-memory and
+     * per-instance: on a scaled-out deployment an eviction only reaches sessions held by
+     * the instance serving the request. Single-instance today — see the plan's Migration
+     * Notes before scaling out.
+     */
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    /**
+     * Without this listener {@code sessionDestroyed} never fires and the registry keeps an
+     * entry for every session that has already been logged out or timed out.
+     */
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
     }
 
     @Bean
@@ -57,6 +80,22 @@ public class SecurityConfig {
             .csrf(csrf -> csrf
                 .spa()
                 .ignoringRequestMatchers("/api/auth/**")
+            )
+            // maximumSessions(-1) is unlimited: this is not concurrency control. It is the
+            // supported way to install ConcurrentSessionFilter, which is what notices a
+            // session the admin surface has expired.
+            .sessionManagement(session -> session
+                .maximumSessions(-1)
+                .sessionRegistry(sessionRegistry())
+                .expiredSessionStrategy(event -> {
+                    // Match this chain's 401 JSON entry point rather than redirecting.
+                    HttpServletResponse response = event.getResponse();
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    objectMapper.writeValue(response.getOutputStream(), Map.of(
+                        "message", "Authentication required"
+                    ));
+                })
             );
 
         return http.build();
@@ -83,6 +122,13 @@ public class SecurityConfig {
             )
             .logout(logout -> logout
                 .logoutSuccessUrl("/login?logout")
+            )
+            // See the API chain for why maximumSessions is -1. An evicted browser lands on
+            // the ordinary login form, which says nothing about deactivation.
+            .sessionManagement(session -> session
+                .maximumSessions(-1)
+                .sessionRegistry(sessionRegistry())
+                .expiredUrl("/login?expired")
             );
 
         return http.build();

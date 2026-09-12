@@ -13,6 +13,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,10 +29,14 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final AuthService authService;
+    private final SessionRegistry sessionRegistry;
 
-    public AuthController(AuthenticationManager authenticationManager, AuthService authService) {
+    public AuthController(AuthenticationManager authenticationManager,
+                          AuthService authService,
+                          SessionRegistry sessionRegistry) {
         this.authenticationManager = authenticationManager;
         this.authService = authService;
+        this.sessionRegistry = sessionRegistry;
     }
 
     @PostMapping("/login")
@@ -58,7 +63,13 @@ public class AuthController {
                     context
                 );
 
+            // Stands in for RegisterSessionAuthenticationStrategy, which the formLogin
+            // filter runs but manual authentication does not. Without it the registry never
+            // learns about API sessions and deactivation cannot evict them. Must come after
+            // changeSessionId() — registering first would record the pre-rotation id.
             CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
+            sessionRegistry.registerNewSession(request.getSession().getId(), user);
+
             return ResponseEntity.ok(UserResponse.from(user));
         } catch (AuthenticationException e) {
             // Catches DisabledException (deactivated account) alongside BadCredentialsException.
