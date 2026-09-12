@@ -596,13 +596,13 @@ _None — 4.5-4.10 automated in `AdminUserControllerTest`, including the create 
 
 #### Automated
 
-- [x] 5.1 Security tests pass: `./mvnw test -Dtest=SecurityConfigTest`
-- [x] 5.2 Deactivation tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
-- [x] 5.3 Full suite passes: `./mvnw test`
-- [x] 5.4 Package succeeds: `./mvnw clean package`
-- [x] 5.5 The create → login → deactivate → evict → reactivate flow is automated end-to-end
-- [x] 5.6 A report by a deactivated resident is still visible to staff with the reporter email intact
-- [x] 5.7 Deploy-time follow-ups (azure backfill, logout cleanup, `ADMIN_EMAIL` / `ADMIN_PASSWORD`) are recorded in Migration Notes
+- [x] 5.1 Security tests pass: `./mvnw test -Dtest=SecurityConfigTest` — 723aae9
+- [x] 5.2 Deactivation tests pass: `./mvnw test -Dtest=AccountDeactivationTest` — 723aae9
+- [x] 5.3 Full suite passes: `./mvnw test` — 723aae9
+- [x] 5.4 Package succeeds: `./mvnw clean package` — 723aae9
+- [x] 5.5 The create → login → deactivate → evict → reactivate flow is automated end-to-end — 723aae9
+- [x] 5.6 A report by a deactivated resident is still visible to staff with the reporter email intact — 723aae9
+- [x] 5.7 Deploy-time follow-ups (azure backfill, logout cleanup, `ADMIN_EMAIL` / `ADMIN_PASSWORD`) are recorded in Migration Notes — 723aae9
 
 #### Manual
 
