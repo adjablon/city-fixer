@@ -374,7 +374,19 @@ Puts a usable surface on Phase 3's routes, links it from the home page, and reti
 
 **Intent**: Cover the routes end-to-end against a real database, including the redirect-and-flash behaviour the templates depend on.
 
-**Contract**: `@SpringBootTest @AutoConfigureMockMvc extends TestcontainersConfig`. Sessions obtained by persisting a user and logging in through `POST /api/auth/login`, reusing the returned `MockHttpSession` (`StaffReportControllerTest.java:213-240`); every write carries `.with(csrf())`. Unique emails per test — nothing is transactional and the container is shared. Covers: the list renders and contains a seeded staff and resident but no admin; creating a staff account redirects and the row is persisted with `Role.STAFF`; an invalid email or a short password re-renders the form with errors and persists nothing; a duplicate email is reported, not thrown; the toggle flips the flag and redirects.
+**Contract**: `@SpringBootTest @AutoConfigureMockMvc extends TestcontainersConfig`. Sessions obtained by persisting a user and logging in through `POST /api/auth/login`, reusing the returned `MockHttpSession` (`StaffReportControllerTest.java:213-240`); every write carries `.with(csrf())`. Unique emails per test — nothing is transactional and the container is shared. Covers: the list renders and contains a seeded staff and resident but no admin; creating a staff account redirects and the row is persisted with `Role.STAFF`; an invalid email or a short password re-renders the form with errors and persists nothing; a duplicate email is reported, not thrown; the toggle flips the flag and redirects; an ADMIN target is refused with 403; and one end-to-end walk of the whole surface — create staff, the new account logs in, deactivate, its live session is expired and re-login refused, reactivate, it logs in again.
+
+Driven test-first via `/10x-tdd` for the template-dependent behaviour (nav guard, list render, form render, validation re-render). The create and toggle routes shipped in Phase 3 and redirect rather than render, so their tests are regression coverage over existing behaviour, marked as such in the file rather than presented as red-green cycles.
+
+#### 7. `CreateStaffForm` trims the email before validation (found by a failing test)
+
+**File**: `src/main/java/com/example/city_fix/user/CreateStaffForm.java`
+
+**Intent**: Fix an inconsistency the end-to-end test exposed: Bean Validation runs on the raw request parameter, before the service normalises, and the shared `@Pattern` excludes whitespace. A pasted address with a trailing space was rejected as "Invalid email format".
+
+**Contract**: The record's compact constructor trims the email so validation sees the normalised value. Without it this form is stricter than the `/register` form an admin already uses, which trims in `AuthService` before validating. Lowercasing stays in the service, which owns the write path. Approved by the user as a deviation from "constraints identical to `RegisterRequest`", which the plan had specified literally.
+
+> **Deviation from plan, consistent with Phases 1-3.** Manual items 4.5-4.10 are all automated by change 6 — the nav guard across three roles, the list contents and admin exclusion, and the create/deactivate/reactivate flow end-to-end. Phase 4 therefore closes with no manual items.
 
 ### Success Criteria:
 
@@ -555,10 +567,10 @@ _None — 2.5 and 2.7 automated in `AccountDeactivationTest`; 2.6 is not observa
 
 #### Automated
 
-- [x] 3.1 Compiles: `./mvnw compile`
-- [x] 3.2 Service tests pass: `./mvnw test -Dtest=AdminUserServiceTest`
-- [x] 3.3 Matcher and security config tests pass: `./mvnw test -Dtest=SecurityConfigTest`
-- [x] 3.4 Full suite passes: `./mvnw test`
+- [x] 3.1 Compiles: `./mvnw compile` — 14ae0f0
+- [x] 3.2 Service tests pass: `./mvnw test -Dtest=AdminUserServiceTest` — 14ae0f0
+- [x] 3.3 Matcher and security config tests pass: `./mvnw test -Dtest=SecurityConfigTest` — 14ae0f0
+- [x] 3.4 Full suite passes: `./mvnw test` — 14ae0f0
 
 #### Manual
 
@@ -568,19 +580,15 @@ _None — 3.5-3.7 automated in `SecurityConfigTest`; 3.8 moved to Phase 4 as ite
 
 #### Automated
 
-- [ ] 4.1 Compiles: `./mvnw compile`
-- [ ] 4.2 Controller tests pass: `./mvnw test -Dtest=AdminUserControllerTest`
-- [ ] 4.3 No reference to the deleted seeder remains: `grep -r "StaffSeeder\|staff.seed" src/` returns nothing
-- [ ] 4.4 Full suite passes: `./mvnw test`
+- [x] 4.1 Compiles: `./mvnw compile`
+- [x] 4.2 Controller tests pass: `./mvnw test -Dtest=AdminUserControllerTest`
+- [x] 4.3 No reference to the deleted seeder remains: `grep -r "StaffSeeder\|staff.seed" src/` returns nothing
+- [x] 4.4 Full suite passes: `./mvnw test`
+- [x] 4.5 Nav guard, list contents and the end-to-end admin flow are automated in `AdminUserControllerTest`
 
 #### Manual
 
-- [ ] 4.5 The "Manage accounts" link appears for admin only
-- [ ] 4.6 The account list renders staff and residents with status badges and no admin row
-- [ ] 4.7 A staff account created with a mixed-case email can log in
-- [ ] 4.8 Deactivating a logged-in staff member evicts them and blocks re-login
-- [ ] 4.9 Reactivating that account restores login
-- [ ] 4.10 `GET /admin/users` returns 200 for an admin (deferred from Phase 3, needs templates)
+_None — 4.5-4.10 automated in `AdminUserControllerTest`, including the create → login → deactivate → evict → reactivate walk._
 
 ### Phase 5: Integration tests, security tests and verification
 

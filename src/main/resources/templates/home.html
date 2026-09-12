@@ -24,6 +24,11 @@
         <p sec:authorize="hasAnyRole('STAFF','ADMIN')">
             <a th:href="@{/staff/reports}">Triage reports</a> — every report on the map, with status changes.
         </p>
+        <!-- Guard expression must stay identical to the /admin/** matcher in SecurityConfig,
+             so the link and the rule cannot drift apart. -->
+        <p sec:authorize="hasRole('ADMIN')">
+            <a th:href="@{/admin/users}">Manage accounts</a> — create staff accounts, deactivate accounts.
+        </p>
     </div>
     <div class="actions">
         <form th:action="@{/logout}" method="post">

@@ -20,6 +20,17 @@ public record CreateStaffForm(
     String password
 ) {
 
+    /**
+     * Trims the email before Bean Validation sees it. Without this the {@code @Pattern}
+     * above — which excludes whitespace — rejects a pasted address with a trailing space
+     * before the service ever gets the chance to normalise it, making this form stricter
+     * than the register form an admin already uses. Lowercasing stays in the service, which
+     * owns the write path (lessons.md).
+     */
+    public CreateStaffForm {
+        email = email == null ? null : email.trim();
+    }
+
     public CreateStaffForm() {
         this(null, null);
     }
