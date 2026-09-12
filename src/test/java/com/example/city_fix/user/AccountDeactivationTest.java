@@ -2,6 +2,7 @@ package com.example.city_fix.user;
 
 import com.example.city_fix.TestcontainersConfig;
 import com.example.city_fix.auth.CustomUserDetails;
+import com.example.city_fix.report.ReportRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -18,15 +19,19 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Evidence of record for the deactivation contract. Phase 1 covers the login-blocking half;
- * Phase 5 extends this class with session-eviction and cross-role cases.
+ * Evidence of record for the deactivation contract: login blocking (Phase 1), session
+ * eviction across both filter chains (Phase 2), and the cross-role and report-integrity
+ * guarantees (Phase 5).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -51,6 +56,9 @@ class AccountDeactivationTest extends TestcontainersConfig {
 
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Autowired
+    private ReportRepository reportRepository;
 
     @Test
     void deactivatedAccount_apiLogin_isRejectedWithTheGenericMessage() throws Exception {
@@ -232,6 +240,74 @@ class AccountDeactivationTest extends TestcontainersConfig {
         assertThat(applicationContext.getBeansOfType(HttpSessionEventPublisher.class))
             .as("without this listener the registry leaks an entry per logout")
             .isNotEmpty();
+    }
+
+    @Test
+    void deactivatedResident_losesAccessToTheirOwnReports() throws Exception {
+        String email = persistUser("evicted-resident@example.com", Role.RESIDENT, true);
+        MockHttpSession session = login(email);
+
+        mockMvc.perform(get("/reports").session(session))
+            .andExpect(status().isOk());
+
+        User resident = userRepository.findByEmail(email).orElseThrow();
+        resident.deactivate();
+        userRepository.save(resident);
+        userSessionService.expireSessions(resident);
+
+        mockMvc.perform(get("/reports").session(session))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/login?expired"));
+    }
+
+    @Test
+    void reportsOfADeactivatedResident_stayVisibleToStaff() throws Exception {
+        // A deliberate product decision, pinned so a later change cannot quietly start
+        // hiding them: a pothole does not stop existing because its reporter was disabled.
+        String residentEmail = persistUser("reporter-then-disabled@example.com", Role.RESIDENT, true);
+        MockHttpSession residentSession = login(residentEmail);
+
+        mockMvc.perform(multipart("/reports")
+                .session(residentSession)
+                .param("latitude", "52.230000")
+                .param("longitude", "21.010000")
+                .param("description", "Pothole filed before the reporter was deactivated")
+                .param("category", "POTHOLE")
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection());
+
+        User resident = userRepository.findByEmail(residentEmail).orElseThrow();
+        Long reportId = reportRepository.findAll().stream()
+            .filter(report -> report.getReporter().getId().equals(resident.getId()))
+            .findFirst()
+            .orElseThrow()
+            .getId();
+
+        resident.deactivate();
+        userRepository.save(resident);
+        userSessionService.expireSessions(resident);
+
+        String staffEmail = persistUser("still-triaging@example.com", Role.STAFF, true);
+        MockHttpSession staffSession = login(staffEmail);
+
+        mockMvc.perform(get("/staff/reports").session(staffSession))
+            .andExpect(status().isOk())
+            // The pin JSON is HTML-escaped into the data-reports attribute, so match the
+            // escaped form — a bare number would match incidentally anywhere on the page.
+            .andExpect(content().string(containsString("&quot;id&quot;:" + reportId)));
+
+        mockMvc.perform(get("/staff/reports/{id}", reportId).session(staffSession))
+            .andExpect(status().isOk())
+            .andExpect(content().string(containsString(residentEmail)));
+    }
+
+    private MockHttpSession login(String email) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(credentials(email)))
+            .andExpect(status().isOk())
+            .andReturn();
+        return (MockHttpSession) result.getRequest().getSession();
     }
 
     /** Nothing is transactional and the container is shared, so every test owns its email. */

@@ -447,7 +447,9 @@ Puts an assertion behind every cross-role and cross-mechanism claim this slice m
 
 **Intent**: Record the domain rules this slice establishes and close out the change.
 
-**Contract**: `CLAUDE.md` gains the account-state rule (accounts are active or deactivated; deactivation blocks login and expires live sessions; admins are managed only through `admin.seed.*`). `change.md` moves to `status: implemented` with today's date.
+**Contract**: `CLAUDE.md` gains an `### Account state` section under `## Domain`: the active/deactivated model and the null-means-active tolerance, deactivation as full revocation with persist-then-evict ordering, the generic denial message, the admins-are-never-managed-here rule and where it lives, `admin.seed.*` as the only admin provisioning path, reports surviving their reporter's deactivation, and the single-instance limit of the in-memory registry. `change.md` moves to `status: implemented` with today's date.
+
+**Adapted during implementation**: `CLAUDE.md` turned out to be gitignored in this repo and has never been tracked, so the rules written there are local-only. Two entries were therefore appended to the tracked `context/foundation/lessons.md` — one on revocation flags enforcing nothing until every grant path is wired (with the mocked-test blind spot that hid it), one on validation running before normalisation. Those are the rules a future change is most likely to violate.
 
 ### Success Criteria:
 
@@ -460,11 +462,11 @@ Puts an assertion behind every cross-role and cross-mechanism claim this slice m
 
 #### Manual Verification:
 
-- A full manual pass of the primary flow locally: create a staff account, log in as them in a second browser, deactivate them, observe the eviction and the blocked re-login, then reactivate and observe restoration
-- A report filed by a resident who is then deactivated is still visible to staff on the triage map and its detail page still shows the reporter's email
-- The deploy-time follow-ups are recorded rather than performed: Migration Notes names the azure backfill statement and the `ADMIN_EMAIL` / `ADMIN_PASSWORD` requirement
+This phase has no manual verification items — the primary flow and the report-integrity guarantee are automated (see the deviation note below), and the deploy-time follow-ups are documentation rather than a test.
 
-**Implementation Note**: This is the final phase. The change closes on local verification — the azure backfill and admin-seed configuration are deploy-time follow-ups, not gates. After automated verification passes, confirm the manual pass before closing the change.
+**Implementation Note**: This is the final phase. The change closes on automated verification plus the recorded deploy-time checklist.
+
+> **Deviation from plan, consistent with Phases 1-4.** Change 1 landed early in Phase 3 and change 2 largely in Phases 2 and 4, so this phase reduced to the two remaining cross-role cases, the report-integrity test, and documentation. The phase was run through `/10x-tdd`, whose gate correctly refused it: it adds no production code, so its tests characterise behaviour built in Phases 1-4 rather than leading it. Implemented inline instead, without red-green framing. Manual items 5.5 and 5.6 are automated; 5.7 is a documentation check.
 
 ---
 
@@ -580,11 +582,11 @@ _None — 3.5-3.7 automated in `SecurityConfigTest`; 3.8 moved to Phase 4 as ite
 
 #### Automated
 
-- [x] 4.1 Compiles: `./mvnw compile`
-- [x] 4.2 Controller tests pass: `./mvnw test -Dtest=AdminUserControllerTest`
-- [x] 4.3 No reference to the deleted seeder remains: `grep -r "StaffSeeder\|staff.seed" src/` returns nothing
-- [x] 4.4 Full suite passes: `./mvnw test`
-- [x] 4.5 Nav guard, list contents and the end-to-end admin flow are automated in `AdminUserControllerTest`
+- [x] 4.1 Compiles: `./mvnw compile` — 55d8481
+- [x] 4.2 Controller tests pass: `./mvnw test -Dtest=AdminUserControllerTest` — 55d8481
+- [x] 4.3 No reference to the deleted seeder remains: `grep -r "StaffSeeder\|staff.seed" src/` returns nothing — 55d8481
+- [x] 4.4 Full suite passes: `./mvnw test` — 55d8481
+- [x] 4.5 Nav guard, list contents and the end-to-end admin flow are automated in `AdminUserControllerTest` — 55d8481
 
 #### Manual
 
@@ -594,13 +596,14 @@ _None — 4.5-4.10 automated in `AdminUserControllerTest`, including the create 
 
 #### Automated
 
-- [ ] 5.1 Security tests pass: `./mvnw test -Dtest=SecurityConfigTest`
-- [ ] 5.2 Deactivation tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
-- [ ] 5.3 Full suite passes: `./mvnw test`
-- [ ] 5.4 Package succeeds: `./mvnw clean package`
+- [x] 5.1 Security tests pass: `./mvnw test -Dtest=SecurityConfigTest`
+- [x] 5.2 Deactivation tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
+- [x] 5.3 Full suite passes: `./mvnw test`
+- [x] 5.4 Package succeeds: `./mvnw clean package`
+- [x] 5.5 The create → login → deactivate → evict → reactivate flow is automated end-to-end
+- [x] 5.6 A report by a deactivated resident is still visible to staff with the reporter email intact
+- [x] 5.7 Deploy-time follow-ups (azure backfill, logout cleanup, `ADMIN_EMAIL` / `ADMIN_PASSWORD`) are recorded in Migration Notes
 
 #### Manual
 
-- [ ] 5.5 Full manual pass of the create → login → deactivate → evict → reactivate flow locally
-- [ ] 5.6 A report by a deactivated resident is still visible to staff with the reporter email intact
-- [ ] 5.7 Deploy-time follow-ups (azure backfill, `ADMIN_EMAIL` / `ADMIN_PASSWORD`) are recorded in Migration Notes
+_None — 5.5 and 5.6 automated in `AdminUserControllerTest` and `AccountDeactivationTest`; 5.7 is a documentation check._
