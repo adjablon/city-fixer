@@ -285,23 +285,38 @@ A nested exception type for the admin-target refusal, following the `AuthService
 
 **Contract**: Mockito with `ArgumentCaptor`. Covers: create-staff lowercases and trims a mixed-case email before both the existence check and the save; create-staff saves with `Role.STAFF` and an encoded password; a duplicate email raises `EmailAlreadyExistsException`; deactivating a user persists the flag *and* triggers session eviction; activating persists the flag and does *not* evict; an ADMIN target is refused for both directions and neither saves nor evicts; an unknown id raises not-found.
 
+#### 8. `/admin/**` matcher tests (pulled forward from Phase 5)
+
+**File**: `src/test/java/com/example/city_fix/config/SecurityConfigTest.java`
+
+**Intent**: Automate this phase's manual authorization checks at the point the matcher lands, rather than leaving the rule unpinned for two phases.
+
+**Contract**: Three cases mirroring the `/staff/**` precedent — `/admin/users` is 403 for a resident, 403 for a staff member, and redirects to `/login` when unauthenticated. The staff case is the load-bearing one: it is what catches someone "fixing" the matcher to mirror `/staff/**`. Redirect assertions use the relative `Location` form the existing tests use.
+
+> **Deviation from plan, consistent with Phases 1-2.** Manual items 3.5-3.7 are automated by change 8. Item **3.8 (admin reaches the page) cannot pass yet** — the controller returns view names whose templates arrive in Phase 4, so an admin request would fail template resolution rather than render. It moves to Phase 4, where the templates make it meaningful. Phase 5's change 1 is correspondingly reduced to that one remaining case.
+
+#### 9. Role labels
+
+**File**: `src/main/java/com/example/city_fix/user/Role.java`
+
+**Intent**: Give the account list a human-readable role column.
+
+**Contract**: Adds a `label` field and `getLabel()` to the enum, following the `ReportStatus` / `Category` precedent. Purely additive — no existing behaviour reads it.
+
 ### Success Criteria:
 
 #### Automated Verification:
 
 - Compiles: `./mvnw compile`
 - Service tests pass: `./mvnw test -Dtest=AdminUserServiceTest`
-- Security config tests still pass: `./mvnw test -Dtest=SecurityConfigTest`
+- Matcher and security config tests pass: `./mvnw test -Dtest=SecurityConfigTest`
 - Full suite passes: `./mvnw test`
 
 #### Manual Verification:
 
-- As a logged-in resident, `GET /admin/users` returns 403 (Whitelabel page — expected)
-- As a logged-in staff member, `GET /admin/users` returns 403 — confirming the matcher is ADMIN-only and not mirroring `/staff/**`
-- Unauthenticated, `GET /admin/users` redirects to `/login`
-- As admin, `GET /admin/users` returns 200
+This phase has no manual verification items — 3.5-3.7 are automated as change 8, and 3.8 moves to Phase 4, which supplies the templates it needs. See the deviation note above.
 
-**Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
+**Implementation Note**: This phase closes on automated verification alone.
 
 ---
 
@@ -526,11 +541,11 @@ _None — 1.7 automated as `AccountDeactivationTest`; the schema checks moved to
 
 #### Automated
 
-- [x] 2.1 Compiles: `./mvnw compile`
-- [x] 2.2 Session service tests pass: `./mvnw test -Dtest=UserSessionServiceTest`
-- [x] 2.3 Existing auth and security tests still pass: `./mvnw test -Dtest=AuthControllerTest,SecurityConfigTest`
-- [x] 2.4 Full suite passes: `./mvnw test`
-- [x] 2.5 Eviction integration tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
+- [x] 2.1 Compiles: `./mvnw compile` — ff1af53
+- [x] 2.2 Session service tests pass: `./mvnw test -Dtest=UserSessionServiceTest` — ff1af53
+- [x] 2.3 Existing auth and security tests still pass: `./mvnw test -Dtest=AuthControllerTest,SecurityConfigTest` — ff1af53
+- [x] 2.4 Full suite passes: `./mvnw test` — ff1af53
+- [x] 2.5 Eviction integration tests pass: `./mvnw test -Dtest=AccountDeactivationTest` — ff1af53
 
 #### Manual
 
@@ -540,17 +555,14 @@ _None — 2.5 and 2.7 automated in `AccountDeactivationTest`; 2.6 is not observa
 
 #### Automated
 
-- [ ] 3.1 Compiles: `./mvnw compile`
-- [ ] 3.2 Service tests pass: `./mvnw test -Dtest=AdminUserServiceTest`
-- [ ] 3.3 Security config tests still pass: `./mvnw test -Dtest=SecurityConfigTest`
-- [ ] 3.4 Full suite passes: `./mvnw test`
+- [x] 3.1 Compiles: `./mvnw compile`
+- [x] 3.2 Service tests pass: `./mvnw test -Dtest=AdminUserServiceTest`
+- [x] 3.3 Matcher and security config tests pass: `./mvnw test -Dtest=SecurityConfigTest`
+- [x] 3.4 Full suite passes: `./mvnw test`
 
 #### Manual
 
-- [ ] 3.5 `GET /admin/users` returns 403 for a resident
-- [ ] 3.6 `GET /admin/users` returns 403 for a staff member
-- [ ] 3.7 `GET /admin/users` redirects to `/login` when unauthenticated
-- [ ] 3.8 `GET /admin/users` returns 200 for an admin
+_None — 3.5-3.7 automated in `SecurityConfigTest`; 3.8 moved to Phase 4 as item 4.10, which supplies the templates it needs._
 
 ### Phase 4: Admin UI and supersession
 
@@ -568,6 +580,7 @@ _None — 2.5 and 2.7 automated in `AccountDeactivationTest`; 2.6 is not observa
 - [ ] 4.7 A staff account created with a mixed-case email can log in
 - [ ] 4.8 Deactivating a logged-in staff member evicts them and blocks re-login
 - [ ] 4.9 Reactivating that account restores login
+- [ ] 4.10 `GET /admin/users` returns 200 for an admin (deferred from Phase 3, needs templates)
 
 ### Phase 5: Integration tests, security tests and verification
 

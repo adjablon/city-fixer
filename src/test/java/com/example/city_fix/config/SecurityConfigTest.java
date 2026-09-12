@@ -86,6 +86,30 @@ class SecurityConfigTest extends TestcontainersConfig {
 
     @Test
     @WithMockUser(roles = "RESIDENT")
+    void adminPath_forbiddenToResident() throws Exception {
+        mockMvc.perform(get("/admin/users"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void adminPath_forbiddenToStaff() throws Exception {
+        // The important one: /admin/** is ADMIN-only and deliberately does NOT mirror
+        // /staff/**, which admits STAFF and ADMIN alike. This is what would catch someone
+        // "fixing" the matcher for consistency.
+        mockMvc.perform(get("/admin/users"))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminPath_redirectsToLoginWhenUnauthenticated() throws Exception {
+        mockMvc.perform(get("/admin/users"))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(header().string("Location", "/login"));
+    }
+
+    @Test
+    @WithMockUser(roles = "RESIDENT")
     void staffPath_forbiddenToResident() throws Exception {
         // Pinned at the config level, not only through the controller: the /staff/** matcher
         // must stay ahead of anyRequest().authenticated(), which would otherwise shadow it.

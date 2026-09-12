@@ -112,6 +112,10 @@ public class SecurityConfig {
                 // be added unprotected. ADMIN is included: the PRD grants admin everything
                 // staff can do. Must stay above anyRequest(), which would otherwise shadow it.
                 .requestMatchers("/staff/**").hasAnyRole("STAFF", "ADMIN")
+                // ADMIN only — deliberately NOT mirroring /staff/**. Admin is a superset of
+                // staff for triage, but account management is not a staff capability.
+                // Must stay above anyRequest(), which would otherwise shadow it.
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
