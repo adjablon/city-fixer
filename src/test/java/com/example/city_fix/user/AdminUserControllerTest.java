@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -36,6 +37,9 @@ class AdminUserControllerTest extends TestcontainersConfig {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Test
     @WithMockUser(roles = "ADMIN")
@@ -71,13 +75,65 @@ class AdminUserControllerTest extends TestcontainersConfig {
         String residentEmail = persist("list-resident@example.com", Role.RESIDENT);
         String adminEmail = persist("list-admin@example.com", Role.ADMIN);
 
-        mockMvc.perform(get("/admin/users"))
+        // Walk every page: the container is shared and non-transactional, so this test's rows
+        // can sit on any page. Checking all of them also makes the admin-exclusion assertion
+        // stronger than before — no admin row on ANY page, not merely the first.
+        String allPages = allPagesHtml();
+        assertThat(allPages).contains(staffEmail).contains(residentEmail);
+        // Admins are excluded at the query, so an admin row cannot appear even if a template
+        // change later forgets to filter.
+        assertThat(allPages).doesNotContain(adminEmail);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void accountList_isPagedSoItCannotGrowWithoutBound() throws Exception {
+        for (int i = 0; i < 30; i++) {
+            persist("paging-" + i + "-" + System.nanoTime() + "@example.com", Role.RESIDENT);
+        }
+
+        String firstPage = mockMvc.perform(get("/admin/users"))
             .andExpect(status().isOk())
-            .andExpect(content().string(containsString(staffEmail)))
-            .andExpect(content().string(containsString(residentEmail)))
-            // Admins are excluded at the query, so an admin row cannot appear here even if
-            // a template change later forgets to filter.
-            .andExpect(content().string(not(containsString(adminEmail))));
+            .andReturn().getResponse().getContentAsString();
+
+        // The page size is the point: without it this table grows with the resident count.
+        assertThat(countOccurrences(firstPage, "/active")).isEqualTo(25);
+        assertThat(firstPage).contains("Next");
+
+        String secondPage = mockMvc.perform(get("/admin/users").param("page", "1"))
+            .andExpect(status().isOk())
+            .andReturn().getResponse().getContentAsString();
+        assertThat(secondPage).contains("Previous");
+        // Pages must not overlap — the sort has an id tiebreak so the ordering is total.
+        assertThat(firstRowEmail(firstPage)).isNotEqualTo(firstRowEmail(secondPage));
+    }
+
+    /** Concatenates every page of the account list; the container is shared across tests. */
+    private String allPagesHtml() throws Exception {
+        StringBuilder all = new StringBuilder();
+        for (int page = 0; page < 50; page++) {
+            String html = mockMvc.perform(get("/admin/users").param("page", String.valueOf(page)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+            all.append(html);
+            if (!html.contains("Next")) {
+                break;
+            }
+        }
+        return all.toString();
+    }
+
+    private static int countOccurrences(String haystack, String needle) {
+        int count = 0;
+        for (int i = haystack.indexOf(needle); i >= 0; i = haystack.indexOf(needle, i + needle.length())) {
+            count++;
+        }
+        return count;
+    }
+
+    private static String firstRowEmail(String html) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("<td>([^<]+@[^<]+)</td>").matcher(html);
+        return m.find() ? m.group(1) : null;
     }
 
     @Test
@@ -125,6 +181,11 @@ class AdminUserControllerTest extends TestcontainersConfig {
                 .with(csrf()))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("already in use")));
+
+        // The rejected create must not have touched the existing account: a bug that
+        // reported the conflict but still overwrote the row's role would otherwise pass.
+        assertThat(userRepository.findByEmail(existing).orElseThrow().getRole())
+            .isEqualTo(Role.RESIDENT);
     }
 
     // The two routes below were implemented in Phase 3 and redirect rather than render, so
@@ -144,10 +205,14 @@ class AdminUserControllerTest extends TestcontainersConfig {
         // authenticate — CustomUserDetailsService lowercases before lookup (lessons.md).
         assertThat(userRepository.findByEmail("new.staff@example.com"))
             .get()
-            .satisfies(user -> {
-                assertThat(user.getRole()).isEqualTo(Role.STAFF);
-                assertThat(user.isActive()).isTrue();
-            });
+            .satisfies(user -> assertThat(user.getRole()).isEqualTo(Role.STAFF));
+
+        // Assert the column, not isActive(): the accessor treats null as active, so a row
+        // written with active IS NULL would satisfy an accessor-based check and be
+        // indistinguishable from a pre-backfill row.
+        assertThat(jdbcTemplate.queryForObject(
+                "select active from users where email = ?", Boolean.class, "new.staff@example.com"))
+            .isTrue();
     }
 
     @Test
@@ -183,6 +248,12 @@ class AdminUserControllerTest extends TestcontainersConfig {
             .andExpect(status().isForbidden());
 
         assertThat(userRepository.findByEmail(adminEmail).orElseThrow().isActive()).isTrue();
+        // The flag surviving is only half the claim — the account must still work. Without
+        // this, a bug that refused the request but corrupted the row would pass.
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(credentials(adminEmail)))
+            .andExpect(status().isOk());
     }
 
     @Test

@@ -14,12 +14,14 @@ public record AccountRow(
     Instant createdAt
 ) {
 
-    public static AccountRow from(User user) {
+    public static AccountRow from(UserRepository.AccountSummary summary) {
         return new AccountRow(
-            user.getId(),
-            user.getEmail(),
-            user.getRole().getLabel(),
-            user.isActive(),
-            user.getCreatedAt());
+            summary.getId(),
+            summary.getEmail(),
+            summary.getRole().getLabel(),
+            // Same null-means-active tolerance as User.isActive(): rows predating the
+            // backfill read as active here too.
+            summary.getActive() == null || summary.getActive(),
+            summary.getCreatedAt());
     }
 }

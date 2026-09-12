@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
@@ -106,6 +107,34 @@ class SecurityConfigTest extends TestcontainersConfig {
         mockMvc.perform(get("/admin/users"))
             .andExpect(status().is3xxRedirection())
             .andExpect(header().string("Location", "/login"));
+    }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void adminWriteRoutes_forbiddenToStaff() throws Exception {
+        // The matcher is the ONLY thing protecting these — AdminUserController carries no
+        // @PreAuthorize by design. Narrowing /admin/** to GET would open account creation and
+        // deactivation to staff, and without these two cases the suite would stay green.
+        mockMvc.perform(post("/admin/users")
+                .param("email", "intruder@example.com")
+                .param("password", "password123")
+                .with(csrf()))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/admin/users/1/active")
+                .param("active", "false")
+                .with(csrf()))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void adminWriteRoute_withoutCsrfToken_isRejected() throws Exception {
+        // Catches anyone adding /admin/** to a CSRF ignore list: the whole state-changing
+        // surface of the admin feature is form POSTs on the web chain.
+        mockMvc.perform(post("/admin/users/1/active")
+                .param("active", "false"))
+            .andExpect(status().isForbidden());
     }
 
     @Test

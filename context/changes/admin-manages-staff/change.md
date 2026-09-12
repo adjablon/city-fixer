@@ -1,7 +1,7 @@
 ---
 change_id: admin-manages-staff
 title: Admin manages office staff accounts
-status: implemented
+status: impl_reviewed
 created: 2026-09-11
 updated: 2026-09-12
 archived_at: null

@@ -5,6 +5,9 @@ import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -37,9 +40,18 @@ public class AdminUserController {
         this.adminUserService = adminUserService;
     }
 
+    // Oldest first, with id as a tiebreak so the ordering is total — two accounts created in
+    // the same millisecond must not be able to swap places between pages.
+    private static final Sort ACCOUNT_SORT = Sort.by("createdAt").ascending().and(Sort.by("id").ascending());
+    private static final int PAGE_SIZE = 25;
+
     @GetMapping
-    public String accountList(Model model) {
-        model.addAttribute("accounts", adminUserService.listManageableAccounts());
+    public String accountList(@RequestParam(defaultValue = "0") int page, Model model) {
+        Page<AccountRow> accounts =
+            adminUserService.listManageableAccounts(PageRequest.of(Math.max(page, 0), PAGE_SIZE, ACCOUNT_SORT));
+
+        model.addAttribute("accounts", accounts.getContent());
+        model.addAttribute("page", accounts);
         model.addAttribute("dateFormatter", CREATED_AT_FORMAT);
         return "admin-users";
     }
@@ -59,8 +71,9 @@ public class AdminUserController {
             return "admin-user-new";
         }
 
+        User created;
         try {
-            adminUserService.createStaff(createStaffForm.email(), createStaffForm.password());
+            created = adminUserService.createStaff(createStaffForm.email(), createStaffForm.password());
         } catch (AuthService.EmailAlreadyExistsException e) {
             // Re-rendered rather than thrown: a taken address is ordinary user input, not a
             // server fault. The typed email is preserved by the bound form object.
@@ -68,8 +81,11 @@ public class AdminUserController {
             return "admin-user-new";
         }
 
+        // Read the email off the persisted entity rather than re-normalising the form value:
+        // a fourth copy of trim().toLowerCase() here could drift from the service that owns
+        // the write, and would silently report an address different from the stored one.
         redirectAttributes.addFlashAttribute("accountMessage",
-            "Staff account created for " + createStaffForm.email().trim().toLowerCase(Locale.ROOT) + ".");
+            "Staff account created for " + created.getEmail() + ".");
         return "redirect:/admin/users";
     }
 
@@ -79,10 +95,14 @@ public class AdminUserController {
                             RedirectAttributes redirectAttributes) {
         adminUserService.setActive(id, active);
 
+        // Deliberately does not claim the open session is gone. Eviction is best-effort: the
+        // session registry is in-memory and per-instance, and a login already in flight can
+        // register after the sweep. That the account can no longer sign in is true under
+        // every topology and both orderings, so that is what the admin is told.
         redirectAttributes.addFlashAttribute("accountMessage",
             active
                 ? "Account reactivated."
-                : "Account deactivated — any open session has been ended.");
+                : "Account deactivated — they can no longer sign in.");
         return "redirect:/admin/users";
     }
 

@@ -11,10 +11,14 @@ class UserTest {
     private static final String PASSWORD_HASH = "$2a$10$hash";
 
     @Test
-    void newUser_isActive() {
+    void newUser_isActive() throws Exception {
         User user = new User(EMAIL, PASSWORD_HASH, Role.RESIDENT);
 
         assertThat(user.isActive()).isTrue();
+        // Assert the stored field, not just the accessor: isActive() also returns true for
+        // null, so an accessor-only assertion passes even if the constructor never sets the
+        // flag — leaving new rows indistinguishable from pre-backfill ones.
+        assertThat(activeField(user)).isTrue();
     }
 
     @Test
@@ -63,6 +67,12 @@ class UserTest {
         user.deactivate();
 
         assertThat(user.isActive()).isFalse();
+    }
+
+    private static Boolean activeField(User user) throws Exception {
+        Field active = User.class.getDeclaredField("active");
+        active.setAccessible(true);
+        return (Boolean) active.get(user);
     }
 
     private static void setActiveToNull(User user) throws Exception {

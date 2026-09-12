@@ -1,15 +1,20 @@
 package com.example.city_fix.user;
 
+import static com.example.city_fix.user.UserFixtures.persistedUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.city_fix.auth.AuthService;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,21 +98,23 @@ class AdminUserServiceTest {
     }
 
     @Test
-    void setActive_false_persistsTheFlagAndThenEvictsSessions() {
+    void setActive_false_clearsTheFlagAndEvictsSessions() {
         User staff = persistedUser(7L, Role.STAFF);
         when(userRepository.findById(7L)).thenReturn(Optional.of(staff));
 
         adminUserService.setActive(7L, false);
 
         assertThat(staff.isActive()).isFalse();
-        // The flag is the durable guarantee, so it must be written before the eviction.
-        var inOrder = org.mockito.Mockito.inOrder(userRepository, userSessionService);
-        inOrder.verify(userRepository).save(staff);
-        inOrder.verify(userSessionService).expireSessions(staff);
+        verify(userSessionService).expireSessions(staff);
+        // setActive is @Transactional and the entity stays managed, so the write is flushed by
+        // dirty checking — an explicit save() here would be a detached merge re-writing every
+        // column. That the flag actually reaches the database is proved by the integration
+        // tests, which a Mockito repository cannot show.
+        verify(userRepository, never()).save(any());
     }
 
     @Test
-    void setActive_true_persistsTheFlagAndDoesNotEvict() {
+    void setActive_true_setsTheFlagAndDoesNotEvict() {
         User staff = persistedUser(8L, Role.STAFF);
         staff.deactivate();
         when(userRepository.findById(8L)).thenReturn(Optional.of(staff));
@@ -115,8 +122,8 @@ class AdminUserServiceTest {
         adminUserService.setActive(8L, true);
 
         assertThat(staff.isActive()).isTrue();
-        verify(userRepository).save(staff);
         verify(userSessionService, never()).expireSessions(any());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -157,24 +164,18 @@ class AdminUserServiceTest {
 
     @Test
     void listManageableAccounts_asksOnlyForResidentsAndStaff() {
-        when(userRepository.findByRoleInOrderByCreatedAtAsc(any())).thenReturn(java.util.List.of());
+        Pageable pageable = PageRequest.of(0, 25);
+        when(userRepository.findByRoleIn(any(), eq(pageable))).thenReturn(Page.empty(pageable));
 
-        adminUserService.listManageableAccounts();
+        adminUserService.listManageableAccounts(pageable);
 
+        // ADMIN must never reach the query: the exclusion is a data-layer guarantee, not
+        // something the template is trusted to do.
         ArgumentCaptor<java.util.Collection<Role>> roles = ArgumentCaptor.forClass(java.util.Collection.class);
-        verify(userRepository).findByRoleInOrderByCreatedAtAsc(roles.capture());
-        assertThat(roles.getValue()).containsExactlyInAnyOrder(Role.RESIDENT, Role.STAFF);
+        verify(userRepository).findByRoleIn(roles.capture(), eq(pageable));
+        assertThat(roles.getValue())
+            .containsExactlyInAnyOrder(Role.RESIDENT, Role.STAFF)
+            .doesNotContain(Role.ADMIN);
     }
 
-    private static User persistedUser(Long id, Role role) {
-        User user = new User("user" + id + "@example.com", "hash", role);
-        try {
-            var idField = User.class.getDeclaredField("id");
-            idField.setAccessible(true);
-            idField.set(user, id);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException("Could not seed the test user id", e);
-        }
-        return user;
-    }
 }

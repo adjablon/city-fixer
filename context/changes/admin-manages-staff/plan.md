@@ -470,6 +470,32 @@ This phase has no manual verification items — the primary flow and the report-
 
 ---
 
+## Addenda (post-implementation review)
+
+Recorded during `/10x-impl-review` so the plan stays ground truth for the next reader. Each item is behaviour that exists in the code but was not described by any planned change.
+
+### A1 — API-chain expired-session strategy (Phase 2)
+
+The Phase 2 contract described only the web chain's `expiredUrl`. The API chain also received an `expiredSessionStrategy` emitting `401 {"message":"Authentication required"}`, matching that chain's existing entry point. A redirect on `/api/**` would have been wrong, so the addition is correct — but it is net-new security behaviour on a filter chain no planned change mentioned. `SecurityConfig.java:87-99`.
+
+### A2 — `setActive` is transactional (review finding F1)
+
+`AdminUserService.setActive` now carries `@Transactional` and no longer calls `save()` explicitly; the managed entity is flushed by dirty checking. Without it the entity was detached between `findById` and `save`, making the write a full-row merge that could lose a concurrent update. This restores the pattern its sibling `StaffReportService.changeStatus` already documented.
+
+### A3 — Account list is paged and projected (review finding F8)
+
+`listManageableAccounts` takes a `Pageable` and returns `Page<AccountRow>` built from a closed projection (`UserRepository.AccountSummary`), so bcrypt hashes are never selected and the page size is fixed at 25. The plan had accepted an unbounded list as an MVP limit; it had not considered that whole `User` entities — hashes included — were being loaded to render a page that never shows them. Sort is `createdAt` then `id`, so the ordering is total and pages cannot overlap.
+
+### A4 — Deactivation message softened (review finding F6)
+
+The flash message no longer claims "any open session has been ended", because the in-memory per-instance registry and an in-flight-login race both make that claim falsifiable. It now says the account can no longer sign in, which is true under every topology.
+
+### A5 — `CreateStaffForm` trims before validation (Phase 4, change 7)
+
+Already recorded in the Phase 4 block; repeated here because it changed a contract the plan stated literally ("constraints identical to `RegisterRequest`").
+
+---
+
 ## Testing Strategy
 
 ### Unit Tests:

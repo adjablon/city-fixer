@@ -2,14 +2,16 @@ package com.example.city_fix.user;
 
 import com.example.city_fix.auth.AuthService;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The admin account-management operations, and the single owner of the rule that ADMIN rows
@@ -40,10 +42,8 @@ public class AdminUserService {
         this.userSessionService = userSessionService;
     }
 
-    public List<AccountRow> listManageableAccounts() {
-        return userRepository.findByRoleInOrderByCreatedAtAsc(MANAGEABLE_ROLES).stream()
-            .map(AccountRow::from)
-            .toList();
+    public Page<AccountRow> listManageableAccounts(Pageable pageable) {
+        return userRepository.findByRoleIn(MANAGEABLE_ROLES, pageable).map(AccountRow::from);
     }
 
     /**
@@ -76,6 +76,10 @@ public class AdminUserService {
      * @throws UserNotFoundException      if no such account exists
      * @throws AdminAccountNotManageableException if the target is an ADMIN
      */
+    // Transactional because this is a read-modify-write: the loaded user stays managed so the
+    // flag change is flushed by dirty checking rather than a detached merge, which would
+    // re-write every column from values read earlier and lose a concurrent update.
+    @Transactional
     public void setActive(Long userId, boolean active) {
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
 
@@ -88,12 +92,11 @@ public class AdminUserService {
         } else {
             user.deactivate();
         }
-        userRepository.save(user);
 
         if (!active) {
-            // Order is load-bearing: the flag is the durable guarantee and is persisted
-            // first. Evicting before the write would leave a window in which the user is
-            // thrown out but can log straight back in.
+            // Order is load-bearing: the flag is set on the managed entity before the
+            // eviction, so a rollback takes both back together rather than leaving a user
+            // evicted from a deactivation that never committed.
             userSessionService.expireSessions(user);
         }
 

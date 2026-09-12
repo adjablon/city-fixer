@@ -23,6 +23,7 @@
         .deactivate:hover { background: #991b1b; }
         .activate { background: #15803d; }
         .activate:hover { background: #166534; }
+        .pager { display: flex; gap: 16px; align-items: center; justify-content: center; margin-top: 20px; color: #475569; font-size: 0.9375rem; }
         .link { text-align: center; margin-top: 24px; }
     </style>
 </head>
@@ -71,6 +72,12 @@
             </tr>
         </tbody>
     </table>
+
+    <nav class="pager" th:if="${page.totalPages > 1}">
+        <a th:if="${!page.first}" th:href="@{/admin/users(page=${page.number - 1})}">&larr; Previous</a>
+        <span th:text="|Page ${page.number + 1} of ${page.totalPages} — ${page.totalElements} account(s)|">Page 1 of 1</span>
+        <a th:if="${!page.last}" th:href="@{/admin/users(page=${page.number + 1})}">Next &rarr;</a>
+    </nav>
 
     <p class="link"><a th:href="@{/}">Home</a></p>
 </body>
