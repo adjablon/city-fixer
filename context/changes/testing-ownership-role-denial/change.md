@@ -1,7 +1,7 @@
 ---
 change_id: testing-ownership-role-denial
 title: "Ownership and role denial: residents cannot read or act on others' reports"
-status: implementing
+status: implemented
 created: 2026-09-13
 updated: 2026-09-13
 archived_at: null

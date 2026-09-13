@@ -303,11 +303,11 @@ None — test-only change, no schema or environment impact, nothing to run outsi
 
 #### Automated
 
-- [x] 2.1 No placeholder text remains in the two filled sections
-- [x] 2.2 §3 row 1 reads `complete`
-- [x] 2.3 No test code blocks were added to the plan
+- [x] 2.1 No placeholder text remains in the two filled sections — 405bfbb
+- [x] 2.2 §3 row 1 reads `complete` — 405bfbb
+- [x] 2.3 No test code blocks were added to the plan — 405bfbb
 
 #### Manual
 
-- [x] 2.4 A new reader can follow §6.1 without rediscovering the CSRF ambiguity
-- [x] 2.5 §6.5 states the integration-over-unit rule consistently with `lessons.md`
+- [x] 2.4 A new reader can follow §6.1 without rediscovering the CSRF ambiguity — 405bfbb
+- [x] 2.5 §6.5 states the integration-over-unit rule consistently with `lessons.md` — 405bfbb
