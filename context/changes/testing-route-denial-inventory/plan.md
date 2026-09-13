@@ -444,27 +444,27 @@ None — test-only, no schema or environment impact, nothing to run outside the 
 
 #### Automated
 
-- [x] 1.1 Full suite passes unchanged: `./mvnw test`
-- [x] 1.2 No class still declares a duplicated helper
-- [x] 1.3 Exactly one `@DynamicPropertySource` remains in the test tree
+- [x] 1.1 Full suite passes unchanged: `./mvnw test` — 4f62bf8
+- [x] 1.2 No class still declares a duplicated helper — 4f62bf8
+- [x] 1.3 Exactly one `@DynamicPropertySource` remains in the test tree — 4f62bf8
 
 #### Manual
 
-- [x] 1.4 Spring context count is unchanged at 2
-- [x] 1.5 Test wall-clock time has not materially increased
+- [x] 1.4 Spring context count is unchanged at 2 — 4f62bf8
+- [x] 1.5 Test wall-clock time has not materially increased — 4f62bf8
 
 ### Phase 2: Route table and completeness assertion
 
 #### Automated
 
-- [ ] 2.1 New test passes: `./mvnw test -Dtest=RouteInventoryTest`
-- [ ] 2.2 Full suite passes: `./mvnw test`
+- [x] 2.1 New test passes: `./mvnw test -Dtest=RouteInventoryTest`
+- [x] 2.2 Full suite passes: `./mvnw test`
 
 #### Manual
 
-- [ ] 2.3 A throwaway route makes `RouteInventoryTest` fail and names it
-- [ ] 2.4 The derived set contains `/error`
-- [ ] 2.5 The failure message is actionable to someone who did not write it
+- [x] 2.3 A throwaway route makes `RouteInventoryTest` fail and names it
+- [x] 2.4 The derived set contains `/error`
+- [x] 2.5 The failure message is actionable to someone who did not write it
 
 ### Phase 3: The authorization matrix
 

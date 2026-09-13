@@ -134,7 +134,7 @@ orchestrator updates Status as artifacts appear on disk.
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
 | 1 | Ownership and role denial | Prove a resident is denied another resident's report and every staff-only action, through the real filter chain | #1, #2 | integration | complete | `context/changes/testing-ownership-role-denial/` |
-| 2 | Route-denial inventory | Make loosening any access rule fail a test across the derived route set, and make removing session-expiry enforcement fail a test on each chain | #3, #6 | integration | planned | `context/changes/testing-route-denial-inventory/` |
+| 2 | Route-denial inventory | Make loosening any access rule fail a test across the derived route set, and make removing session-expiry enforcement fail a test on each chain | #3, #6 | integration | implementing | `context/changes/testing-route-denial-inventory/` |
 | 3 | Input contract at the server boundary | Reject invalid coordinates and abusive photo payloads server-side, independent of what the browser sends | #4, #5 | unit + integration | not started | — |
 | 4 | Quality-gates wiring | Make the test step explicit in CI and add coverage visibility over the modules phases 1–3 touched | cross-cutting | gates | not started | — |
 
