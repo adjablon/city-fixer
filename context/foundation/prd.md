@@ -139,5 +139,19 @@ The map is not decorative — it is the shared spatial reference that makes both
 
 ## Open Questions
 
-1. **What are the valid status transitions?** Can a report go from "new" directly to "rejected"? Or must it pass through "in progress" first? The four statuses are defined (new, in progress, resolved, rejected) but the allowed transitions between them are not. — Owner: user. Block: no (default to free transitions if unresolved).
-2. **How is the first admin account provisioned?** The admin role manages office staff accounts (FR-002), but the system needs a bootstrap mechanism for the initial admin. — Owner: user. Block: no (can be resolved during implementation).
+Both questions raised at drafting have since been answered. They are kept here, numbered as
+before, so references to them stay valid — with the resolution and where it was made.
+
+1. **What are the valid status transitions?** — **RESOLVED: transitions are unrestricted.** Any
+   status may follow any other, including `resolved` → `new`; there are no terminal states and no
+   workflow validation. FR-007's arrow notation describes the common path, not a constraint.
+   Submitting the status a report already has is a no-op that leaves the timestamp untouched.
+   Decided in S-02 (`context/archive/2026-09-09-staff-triages-reports/plan.md`) and pinned by a
+   test covering every ordered pair of distinct statuses.
+2. **How is the first admin account provisioned?** — **RESOLVED: by seed properties only.**
+   `admin.seed.*`, supplied as the `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables on
+   both the local and azure profiles. There is no UI for creating admins, and admin rows are
+   never listed or deactivated through the admin surface, which makes self-lockout structurally
+   impossible. Decided in F-01 and completed in S-03
+   (`context/archive/2026-09-11-admin-manages-staff/`); the deploy-time step is tracked in
+   `context/foundation/lessons.md`.
