@@ -485,24 +485,24 @@ None — test-only, no schema or environment impact, nothing to run outside the 
 
 #### Automated
 
-- [x] 4.1 Deactivation tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
-- [x] 4.2 Config test passes: `./mvnw test -Dtest=SecurityConfigTest`
-- [x] 4.3 Full suite passes: `./mvnw test`
+- [x] 4.1 Deactivation tests pass: `./mvnw test -Dtest=AccountDeactivationTest` — 726e9f6
+- [x] 4.2 Config test passes: `./mvnw test -Dtest=SecurityConfigTest` — 726e9f6
+- [x] 4.3 Full suite passes: `./mvnw test` — 726e9f6
 
 #### Manual
 
-- [x] 4.4 Removing the web chain's `sessionManagement` block fails the configuration guard
-- [x] 4.5 The CSRF × expiry outcome was observed before being asserted, and recorded
+- [x] 4.4 Removing the web chain's `sessionManagement` block fails the configuration guard — 726e9f6
+- [x] 4.5 The CSRF × expiry outcome was observed before being asserted, and recorded — 726e9f6
 
 ### Phase 5: Cookbook and rollout sync
 
 #### Automated
 
-- [ ] 5.1 No Phase-2 placeholder remains
-- [ ] 5.2 §3 row 2 reads `complete`
-- [ ] 5.3 No test code blocks added to the plan
+- [x] 5.1 No Phase-2 placeholder remains
+- [x] 5.2 §3 row 2 reads `complete`
+- [x] 5.3 No test code blocks added to the plan
 
 #### Manual
 
-- [ ] 5.4 A reader following §6.2 would add a table row, not a new test class
-- [ ] 5.5 The §6.6 note states the residual filter-route gap honestly
+- [x] 5.4 A reader following §6.2 would add a table row, not a new test class
+- [x] 5.5 The §6.6 note states the residual filter-route gap honestly

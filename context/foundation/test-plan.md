@@ -134,7 +134,7 @@ orchestrator updates Status as artifacts appear on disk.
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
 | 1 | Ownership and role denial | Prove a resident is denied another resident's report and every staff-only action, through the real filter chain | #1, #2 | integration | complete | `context/changes/testing-ownership-role-denial/` |
-| 2 | Route-denial inventory | Make loosening any access rule fail a test across the derived route set, and make removing session-expiry enforcement fail a test on each chain | #3, #6 | integration | implementing | `context/changes/testing-route-denial-inventory/` |
+| 2 | Route-denial inventory | Make loosening any access rule fail a test across the derived route set, and make removing session-expiry enforcement fail a test on each chain | #3, #6 | integration | complete | `context/changes/testing-route-denial-inventory/` |
 | 3 | Input contract at the server boundary | Reject invalid coordinates and abusive photo payloads server-side, independent of what the browser sends | #4, #5 | unit + integration | not started | — |
 | 4 | Quality-gates wiring | Make the test step explicit in CI and add coverage visibility over the modules phases 1–3 touched | cross-cutting | gates | not started | — |
 
@@ -206,8 +206,30 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 ### 6.2 Adding a route to the denial inventory
 
-TBD — see §3 Phase 2 for the enumeration pattern that makes a loosened
-access rule, or a missing account-state check, fail a test.
+- **Adding a route means adding a table row, not writing a test.** The expectation
+  table is the single source; the matrix and the completeness assertion both read it.
+  A new route with no row fails the build, and the failure message says so.
+- **Location**: the table and its two consuming tests live together in the config test
+  package. Reference tests: the completeness assertion and the parameterised matrix.
+- **Author the expected outcome from the PRD, never from the security configuration.**
+  Spring exposes no way to enumerate configured authorization rules — deliberately
+  checked, there is no accessor — so the expectations must be written by hand. Reading
+  them off the configuration would produce a mirror that ratifies whatever that
+  configuration says, including a mistake.
+- **Give every identity a value, including the ones that may.** A denial test proves
+  nothing beside a permission that no longer works: a rule that denies *everyone*
+  passes a suite of denial-only tests. Allow cells are what make a denial attributable.
+- **Send a valid CSRF token on every state-mutating cell.** Without one the request is
+  refused by the CSRF filter with the same 403 a role denial produces, and the case
+  would pass with the access rule deleted. See §6.1.
+- **Target an id that does not exist and send no body.** An authorized request then
+  reaches its handler and stops, which keeps the assertion about authorization and
+  stops the matrix writing rows to a database that is shared and never rolled back.
+- **Three routes cannot be derived and are listed by hand**: the form-login POST and
+  the two logout POSTs are handled by filters and never reach the dispatcher. A fourth
+  such route would not be caught automatically — nothing in the framework enumerates
+  them. That limitation is real; do not assume the completeness assertion covers it.
+- **Run locally**: the config test package, or the whole suite. Needs Docker.
 
 ### 6.3 Adding a server-side input-contract test
 
@@ -273,6 +295,32 @@ re-implement user and report setup — `StaffReportControllerTest`, `ReportWebCo
 the `user` package and unreachable from `report`. The route inventory will need role-aware
 fixtures everywhere, which is the moment to extract them; doing it earlier would have meant
 refactoring four passing classes for no behavioural signal.
+
+**Phase 2 — Route-denial inventory (2026-09-13).** Research reshaped both risks before any
+test was written. Risk #3 grew: the suite's problem was not only missing denials but a denial
+that proved nothing — `GET /reports/new` was refused for staff and anonymous with no
+successful resident case, so denying *everyone* would have kept the suite green. Risk #6
+shrank: account state is not evaluated per request at all, so the per-route sweep the plan
+originally called for would have been one test per route all failing for the same single
+cause.
+
+The design question was whether a route list can avoid rotting. It can, halfway: Spring's
+handler mapping yields the routes, but its authorization rules are not introspectable — which
+is fortunate, because it forces the expectations to be authored from the PRD instead of read
+back from the configuration under test. The completeness assertion over the derived set is
+what actually protects: a route added without a decision fails the build. Three filter-level
+routes stay hand-listed and a fourth would slip through; that gap is named rather than papered
+over.
+
+Two things were observed rather than reasoned about. `CsrfFilter` runs **ahead of**
+`ConcurrentSessionFilter`, so on the browser chain a missing token answers 403 and masks
+session expiry entirely — the assertion for that case was written only after probing it.
+And the fixture extraction was verified cache-neutral: the suite still builds two Spring
+contexts, because the base inherits the existing `@DynamicPropertySource` rather than
+declaring its own.
+
+**Carried forward.** `POST /register` still has no test of any kind. It is state-mutating and
+public, so its risk is input-contract rather than authorization — rollout Phase 3's territory.
 
 ## 7. What We Deliberately Don't Test
 
