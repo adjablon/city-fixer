@@ -238,19 +238,26 @@ including which layer is the real enforcer.
 
 ### 6.4 Adding an integration test that needs the database
 
-- **Extend `TestcontainersConfig`** (`src/test/java/com/example/city_fix/`). It starts
-  one `postgres:17` container in a static initializer, shared by every extending class
-  and reused for the whole JVM. Never stand up a container per test class.
-- **Annotate** `@SpringBootTest` plus a bare `@AutoConfigureMockMvc`. Never pass
-  `addFilters = false` — it disables the security chain and silently voids any
-  authorization assertion in the class.
+- **Extend `IntegrationTest`** (`src/test/java/com/example/city_fix/`). It already carries
+  `@SpringBootTest` and a bare `@AutoConfigureMockMvc`, extends `TestcontainersConfig`,
+  and provides the shared setup — authenticate as any role, register a resident, persist a
+  user with an active flag, submit a report, find one by description. Do not re-implement
+  these privately; four classes used to, and removing that duplication is why the base
+  exists.
+- **Never declare a second `@DynamicPropertySource`.** The customizer Spring builds from
+  one compares only the set of methods, so a duplicate forks an entire extra application
+  context even though it produces identical properties against the same container. The
+  inherited `TestcontainersConfig` method must stay the only one in the tree.
+- **Never pass `addFilters = false`** — it disables the security chain and silently voids
+  any authorization assertion in the class.
 - **The database is shared and nothing is transactional.** Rows persist across tests
   within a run. Every test must own unique identifiers (emails, report descriptions)
   and must never assume an empty table or a fixed row count.
 - **Docker is required** for every class extending this config. Without it they fail
   at class-init with `ExceptionInInitializerError`; the pure-unit classes still pass,
   so a partial green run is not a green suite.
-- **Reference test**: `src/test/java/com/example/city_fix/report/StaffReportControllerTest.java`.
+- **Reference test**: any class extending `IntegrationTest`; the report and user controller
+  tests are the fullest examples.
 - **Run locally**: `./mvnw test`.
 
 ### 6.5 Choosing integration over unit

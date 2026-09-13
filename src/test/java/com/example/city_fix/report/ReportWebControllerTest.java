@@ -4,7 +4,6 @@ import com.example.city_fix.IntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
@@ -13,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -213,24 +211,5 @@ class ReportWebControllerTest extends IntegrationTest {
 
         mockMvc.perform(get("/reports/" + reportId + "/photo").session(stranger))
             .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void reportRoutesUnauthenticated_redirectToLogin() throws Exception {
-        mockMvc.perform(get("/reports"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
-
-        mockMvc.perform(get("/reports/new"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
-
-        mockMvc.perform(get("/reports/1"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
-
-        mockMvc.perform(get("/reports/1/photo"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
     }
 }

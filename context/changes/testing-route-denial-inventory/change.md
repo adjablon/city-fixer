@@ -1,7 +1,7 @@
 ---
 change_id: testing-route-denial-inventory
 title: "Route-denial inventory: every authenticated route and method asserts denial"
-status: implemented
+status: impl_reviewed
 created: 2026-09-13
 updated: 2026-09-13
 archived_at: null

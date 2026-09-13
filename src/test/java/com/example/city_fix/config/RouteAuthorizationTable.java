@@ -65,6 +65,11 @@ public final class RouteAuthorizationTable {
      * <p>This list is hand-maintained and that is a real limitation: a fourth filter-level route
      * added later would not be caught by the completeness assertion. Nothing in the framework
      * enumerates them.
+     *
+     * <p>Static resources are the other blind spot, and a structural one: they are served by
+     * handler <em>objects</em> rather than handler methods, so no additional mapping source would
+     * surface them. Both are gated by the same chain as everything else, so the exposure is
+     * bounded — but the completeness assertion does not cover them and should not be claimed to.
      */
     public static final Set<Route> FILTER_LEVEL_ROUTES = Set.of(
         post("/login"),
@@ -82,6 +87,20 @@ public final class RouteAuthorizationTable {
         post("/register"),
         post("/api/auth/login"),
         post("/api/auth/register")
+    );
+
+    /**
+     * Actuator endpoints currently exposed by {@code management.endpoints.web.exposure.include}.
+     * They carry no per-identity rows — these are Boot's own behaviour rather than a product rule —
+     * but they stay inside the completeness check, so exposing a new endpoint fails the build and
+     * forces a decision about it. Only health and info are public; the other two fall through to
+     * {@code anyRequest().authenticated()}.
+     */
+    public static final Set<Route> ACTUATOR_ROUTES = Set.of(
+        get("/actuator"),
+        get("/actuator/health"),
+        get("/actuator/health/**"),
+        get("/actuator/info")
     );
 
     /** Boot's error mapping. It accepts every method, so it is matched on pattern alone. */

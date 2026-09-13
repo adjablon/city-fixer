@@ -5,10 +5,10 @@ import com.example.city_fix.config.RouteAuthorizationTable.Route;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.webmvc.actuate.endpoint.web.WebMvcEndpointHandlerMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -32,6 +32,12 @@ class RouteInventoryTest extends IntegrationTest {
     @Qualifier("requestMappingHandlerMapping")
     private RequestMappingHandlerMapping handlerMapping;
 
+    // Actuator maps its endpoints through a sibling type rather than a subtype, so they are
+    // invisible to the mapping above. Without this second source, widening
+    // management.endpoints.web.exposure.include would expose endpoints with the build still green.
+    @Autowired
+    private WebMvcEndpointHandlerMapping actuatorHandlerMapping;
+
     @Test
     void everyDerivedRouteCarriesAnAuthorizationDecision() {
         Set<Route> undecided = new TreeSet<>(
@@ -39,6 +45,7 @@ class RouteInventoryTest extends IntegrationTest {
         undecided.addAll(derivedRoutes());
         undecided.removeAll(RouteAuthorizationTable.authenticatedRoutes());
         undecided.removeAll(RouteAuthorizationTable.PUBLIC_ROUTES);
+        undecided.removeAll(RouteAuthorizationTable.ACTUATOR_ROUTES);
         undecided.removeIf(route -> RouteAuthorizationTable.ERROR_PATTERN.equals(route.pattern()));
 
         assertThat(undecided)
@@ -53,6 +60,17 @@ class RouteInventoryTest extends IntegrationTest {
     }
 
     @Test
+    void everyRouteInTheTableStillExists() {
+        // The completeness check runs one way only — derived minus table. Without this, deleting a
+        // route from a controller leaves its four matrix cells green: anonymous still redirects via
+        // the catch-all, and every other identity gets a 404, which GRANTED accepts. The table
+        // would keep proving authorization on a route that no longer exists.
+        assertThat(derivedRoutes())
+            .as("a table row whose route no longer exists asserts nothing")
+            .containsAll(RouteAuthorizationTable.authenticatedRoutes());
+    }
+
+    @Test
     void derivationSeesMappingsThatRestrictNoMethod() {
         // Boot's error controller maps every method. Reading an empty methods condition as
         // "no methods" rather than "all methods" would silently drop it, and the same mistake
@@ -64,7 +82,13 @@ class RouteInventoryTest extends IntegrationTest {
 
     private Set<Route> derivedRoutes() {
         Set<Route> routes = new LinkedHashSet<>();
-        for (RequestMappingInfo info : handlerMapping.getHandlerMethods().keySet()) {
+        collectInto(routes, handlerMapping.getHandlerMethods().keySet());
+        collectInto(routes, actuatorHandlerMapping.getHandlerMethods().keySet());
+        return routes;
+    }
+
+    private void collectInto(Set<Route> routes, Set<RequestMappingInfo> infos) {
+        for (RequestMappingInfo info : infos) {
             Set<RequestMethod> declared = info.getMethodsCondition().getMethods();
             Set<RequestMethod> effective = declared.isEmpty()
                 ? Set.of(RequestMethod.values())
@@ -75,7 +99,6 @@ class RouteInventoryTest extends IntegrationTest {
                 }
             }
         }
-        return routes;
     }
 
     @Test

@@ -57,17 +57,6 @@ class StaffReportControllerTest extends IntegrationTest {
     }
 
     @Test
-    void staffRoutes_unauthenticated_redirectToLogin() throws Exception {
-        mockMvc.perform(get("/staff/reports"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
-
-        mockMvc.perform(get("/staff/reports/1"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
-    }
-
-    @Test
     void staffDetail_showsTheReporterAndTheReport() throws Exception {
         MockHttpSession resident = registerResident("detail-owner@example.com");
         submitReport(resident, "Report visible in full to staff");
@@ -158,23 +147,6 @@ class StaffReportControllerTest extends IntegrationTest {
 
         assertThat(reportRepository.findById(reportId).orElseThrow().getStatus())
             .isEqualTo(ReportStatus.NEW);
-    }
-
-    @Test
-    void reportCreation_isForbiddenToStaff() throws Exception {
-        MockHttpSession staff = authenticateAs("no-filing-staff@example.com", Role.STAFF);
-
-        mockMvc.perform(get("/reports/new").session(staff))
-            .andExpect(status().isForbidden());
-
-        mockMvc.perform(multipart("/reports")
-                .param("latitude", "52.100000")
-                .param("longitude", "21.000000")
-                .param("description", "Staff should not be able to file this")
-                .param("category", "POTHOLE")
-                .session(staff)
-                .with(csrf()))
-            .andExpect(status().isForbidden());
     }
 
     @Test

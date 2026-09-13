@@ -3,7 +3,6 @@ package com.example.city_fix.config;
 import com.example.city_fix.IntegrationTest;
 import com.example.city_fix.config.RouteAuthorizationTable.Expectation;
 import com.example.city_fix.config.RouteAuthorizationTable.Identity;
-import com.example.city_fix.config.RouteAuthorizationTable.Outcome;
 import com.example.city_fix.user.Role;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -29,7 +28,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  *
  * <p>Every case targets an id that does not exist and sends no request body, so an authorized
  * request reaches its handler and stops there. That keeps the matrix about authorization — which
- * is all {@code GRANTED} claims — and means no case writes a row to the shared database.
+ * is all {@code GRANTED} claims — and means no request writes a report or account row. The
+ * three cached sessions do each persist one user, once per run.
  */
 class RouteAuthorizationMatrixTest extends IntegrationTest {
 
@@ -72,9 +72,11 @@ class RouteAuthorizationMatrixTest extends IntegrationTest {
                 .isEqualTo(401);
             case LOGIN_REDIRECT -> {
                 assertThat(status).as("%s must redirect", describe).isBetween(300, 399);
+                // endsWith, not contains: the entry point emits no query string, so /login?expired
+                // or /loginXyz would mean something else went wrong.
                 assertThat(location).as("%s must be sent to the login page", describe)
                     .isNotNull()
-                    .contains("/login");
+                    .endsWith("/login");
             }
             case GRANTED -> {
                 // GRANTED is a claim about the authorization layer only: the request was allowed
@@ -82,10 +84,16 @@ class RouteAuthorizationMatrixTest extends IntegrationTest {
                 // failure — is the business of the focused tests, not of this matrix.
                 assertThat(status)
                     .as("%s must not be refused by the authorization layer", describe)
-                    .isNotIn(401, 403);
-                if (status >= 300 && status < 400 && location != null) {
+                    .isNotIn(401, 403)
+                    // A 5xx is not a handler outcome, it is a broken one — an allow cell must not
+                    // stay green on a route that throws on every request.
+                    .isLessThan(500);
+                if (status >= 300 && status < 400) {
+                    // No null-guard: a redirect without a Location header cannot be shown to be
+                    // authorized, so it must fail rather than slip through this branch.
                     assertThat(location)
                         .as("%s was redirected to the login page, so it was not authorized", describe)
+                        .isNotNull()
                         .doesNotContain("/login");
                 }
             }
@@ -94,12 +102,13 @@ class RouteAuthorizationMatrixTest extends IntegrationTest {
 
     @Test
     void everyAuthenticatedRouteInTheTableProducesCases() {
-        // Guards against a table row that silently contributes no case, which would leave a route
-        // looking covered while asserting nothing.
+        // A lower bound, not an identity: authenticatedRoutes() is derived FROM the expectations,
+        // so asserting that each of its routes appears in them can never fail. Only a floor on the
+        // table's size catches rows being dropped, and only the size check below catches a route
+        // that was given fewer than four identities.
         assertThat(RouteAuthorizationTable.authenticatedRoutes())
-            .as("every route in the table must appear in the parameterised cases")
-            .allSatisfy(route -> assertThat(expectations())
-                .anySatisfy(expectation -> assertThat(expectation.route()).isEqualTo(route)));
+            .as("the table must still cover the application's authenticated surface")
+            .hasSizeGreaterThanOrEqualTo(15);
 
         assertThat(expectations())
             .as("every route must carry an expectation for all four identities")
