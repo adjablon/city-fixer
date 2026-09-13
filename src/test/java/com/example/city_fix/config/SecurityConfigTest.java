@@ -1,9 +1,13 @@
 package com.example.city_fix.config;
 
 import com.example.city_fix.IntegrationTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.web.FilterChainProxy;
+import org.springframework.security.web.session.ConcurrentSessionFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,6 +22,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@link RouteAuthorizationMatrixTest}, driven by {@link RouteAuthorizationTable}.
  */
 class SecurityConfigTest extends IntegrationTest {
+
+    @Autowired
+    private FilterChainProxy filterChainProxy;
+
+    @Test
+    void everyFilterChainInstallsSessionExpiryEnforcement() {
+        // Account state is not re-checked per request: the principal is a snapshot taken at
+        // login. Revoking a live session depends entirely on ConcurrentSessionFilter reading the
+        // registry, and that filter is installed only by a sessionManagement block. A chain added
+        // without one silently stops evicting deactivated accounts for everything it serves, and
+        // nothing else in the suite would notice.
+        assertThat(filterChainProxy.getFilterChains())
+            .isNotEmpty()
+            .allSatisfy(chain -> assertThat(chain.getFilters())
+                .as("chain %s installs no ConcurrentSessionFilter, so deactivation cannot evict "
+                    + "the sessions it serves", chain)
+                .anySatisfy(filter -> assertThat(filter).isInstanceOf(ConcurrentSessionFilter.class)));
+    }
 
     @Test
     void publicApiPaths_accessibleWithoutAuth() throws Exception {

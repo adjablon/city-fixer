@@ -470,29 +470,29 @@ None — test-only, no schema or environment impact, nothing to run outside the 
 
 #### Automated
 
-- [x] 3.1 Matrix test passes: `./mvnw test -Dtest=RouteAuthorizationMatrixTest`
-- [x] 3.2 Full suite passes: `./mvnw test`
-- [x] 3.3 Every table row produced a case
+- [x] 3.1 Matrix test passes: `./mvnw test -Dtest=RouteAuthorizationMatrixTest` — b557c4a
+- [x] 3.2 Full suite passes: `./mvnw test` — b557c4a
+- [x] 3.3 Every table row produced a case — b557c4a
 
 #### Manual
 
-- [x] 3.4 Mutation A: `/reports/new` denying everyone fails the RESIDENT allow cell
-- [x] 3.5 Mutation B: deleting the `/admin/**` matcher fails resident and staff deny cells
-- [x] 3.6 Mutation C: `/staff/**` as `hasRole("STAFF")` fails the admin allow cells
-- [x] 3.7 No two mutations fail the same single cell
+- [x] 3.4 Mutation A: `/reports/new` denying everyone fails the RESIDENT allow cell — b557c4a
+- [x] 3.5 Mutation B: deleting the `/admin/**` matcher fails resident and staff deny cells — b557c4a
+- [x] 3.6 Mutation C: `/staff/**` as `hasRole("STAFF")` fails the admin allow cells — b557c4a
+- [x] 3.7 No two mutations fail the same single cell — b557c4a
 
 ### Phase 4: Account-state expiry
 
 #### Automated
 
-- [ ] 4.1 Deactivation tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
-- [ ] 4.2 Config test passes: `./mvnw test -Dtest=SecurityConfigTest`
-- [ ] 4.3 Full suite passes: `./mvnw test`
+- [x] 4.1 Deactivation tests pass: `./mvnw test -Dtest=AccountDeactivationTest`
+- [x] 4.2 Config test passes: `./mvnw test -Dtest=SecurityConfigTest`
+- [x] 4.3 Full suite passes: `./mvnw test`
 
 #### Manual
 
-- [ ] 4.4 Removing the web chain's `sessionManagement` block fails the configuration guard
-- [ ] 4.5 The CSRF × expiry outcome was observed before being asserted, and recorded
+- [x] 4.4 Removing the web chain's `sessionManagement` block fails the configuration guard
+- [x] 4.5 The CSRF × expiry outcome was observed before being asserted, and recorded
 
 ### Phase 5: Cookbook and rollout sync
 

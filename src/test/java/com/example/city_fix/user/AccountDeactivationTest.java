@@ -137,7 +137,63 @@ class AccountDeactivationTest extends IntegrationTest {
         userSessionService.expireSessions(user);
 
         mockMvc.perform(get("/api/auth/me").session(session))
-            .andExpect(status().isUnauthorized());
+            .andExpect(status().isUnauthorized())
+            // The body matters: the API chain's expired-session strategy must answer exactly as
+            // its unauthenticated entry point does, so an evicted session is indistinguishable
+            // from one that never authenticated.
+            .andExpect(jsonPath("$.message").value("Authentication required"));
+    }
+
+    @Test
+    void evictedSessionPostingOnTheWebChain_isSentToTheExpiredLoginPageAndWritesNothing() throws Exception {
+        // Observed, not assumed: CsrfFilter runs BEFORE ConcurrentSessionFilter, so a missing
+        // token answers 403 and masks the expiry entirely. Only a request carrying a valid token
+        // reaches the expiry check, which makes the token load-bearing here exactly as it is for
+        // role denial. An expiry test that omitted it would assert 403 and prove nothing about
+        // eviction.
+        String email = persistUser("evicted-web-post@example.com", Role.RESIDENT, true);
+        MockHttpSession session = login(email);
+
+        User user = userRepository.findByEmail(email).orElseThrow();
+        user.deactivate();
+        userRepository.save(user);
+        userSessionService.expireSessions(user);
+
+        String description = "Report an evicted session must not be able to file";
+        mockMvc.perform(post("/reports")
+                .param("latitude", "52.100000")
+                .param("longitude", "21.000000")
+                .param("description", description)
+                .param("category", "POTHOLE")
+                .session(session)
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/login?expired"));
+
+        assertThat(reportRepository.findAll())
+            .as("the write must not have happened")
+            .noneMatch(report -> description.equals(report.getDescription()));
+    }
+
+    @Test
+    void missingCsrfTokenMasksExpiryOnTheWebChain() throws Exception {
+        // Pins the filter ordering above, so that a future reordering which let expiry answer
+        // first does not silently change what a denial status means on this chain.
+        String email = persistUser("evicted-web-nocsrf@example.com", Role.RESIDENT, true);
+        MockHttpSession session = login(email);
+
+        User user = userRepository.findByEmail(email).orElseThrow();
+        user.deactivate();
+        userRepository.save(user);
+        userSessionService.expireSessions(user);
+
+        mockMvc.perform(post("/reports")
+                .param("latitude", "52.100000")
+                .param("longitude", "21.000000")
+                .param("description", "never filed")
+                .param("category", "POTHOLE")
+                .session(session))
+            .andExpect(status().isForbidden());
     }
 
     @Test
