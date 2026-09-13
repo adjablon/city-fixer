@@ -1,12 +1,8 @@
 package com.example.city_fix.config;
 
-import com.example.city_fix.TestcontainersConfig;
+import com.example.city_fix.IntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -16,12 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class SecurityConfigTest extends TestcontainersConfig {
-
-    @Autowired
-    private MockMvc mockMvc;
+class SecurityConfigTest extends IntegrationTest {
 
     @Test
     void publicApiPaths_accessibleWithoutAuth() throws Exception {

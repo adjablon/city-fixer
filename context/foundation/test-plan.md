@@ -53,7 +53,7 @@ research's job, see §1 principle #3).
 | 3 | An access rule is changed, a route is silently opened, and the suite stays green because no test ever asserted denial on that route | High | High | interview Q2 (team burned by a related failure); `lessons.md` §"A revocation flag only revokes once every enforcement point is wired"; `archive/2026-09-11-admin-manages-staff/reviews/impl-review.md` F3 — write routes had no authorization test until review; Phase 1 research 2026-09-13 — re-framed from a mocking premise, see note below |
 | 4 | A report persists with a missing, out-of-range, or transposed coordinate; the pin is wrong and the report is undispatchable | High | Medium | PRD §Success Criteria guardrail "a misplaced pin makes the report useless for dispatch"; PRD §Business Logic "the map is not decorative"; interview Q3; hot-spot dirs `src/main/resources/static/js/` and `src/main/java/com/example/city_fix/report/` — 23 commits/30d |
 | 5 | An oversized or wrong-type photo payload is accepted server-side and reaches storage | Medium | Medium | PRD FR-004; `lessons.md` §"Verify schema changes reach existing databases under ddl-auto=update"; abuse lens — resource abuse and untrusted input |
-| 6 | A route added after the revocation work skips the account-state check, and a deactivated account keeps working through it | High | Low | `lessons.md` §"A revocation flag only revokes once every enforcement point is wired" (three silent gaps already found); `CLAUDE.md` §Account state; hot-spot dir `src/main/java/com/example/city_fix/user/` — 14 commits/30d |
+| 6 | A configuration change removes session-expiry enforcement, and a deactivated account keeps working through an already-live session | High | Low | `lessons.md` §"A revocation flag only revokes once every enforcement point is wired" (three silent gaps already found); `CLAUDE.md` §Account state; hot-spot dir `src/main/java/com/example/city_fix/user/` — 14 commits/30d; Phase 2 research 2026-09-13 — re-worded from a per-route premise, see note below |
 
 Abuse lens coverage: authorization/access → #1, #2, #3, #6; untrusted input
 and server-side validation parity → #4, #5; resource abuse → #5; PII
@@ -85,6 +85,35 @@ where it sits.
 - **Risk #2 confirmed as written** — and found to be the only genuinely
   uncovered item in Phase 1.
 
+**Backported from Phase 2 research, 2026-09-13** (see
+`context/changes/testing-route-denial-inventory/research.md`).
+
+- **Risk #6 re-worded and its response guidance replaced.** The original
+  scenario assumed a route could "skip the account-state check", and the
+  guidance proposed proving denial "on every authenticated route, by the same
+  enumeration as #3". Research disproved the premise: account state is not
+  evaluated per route at all. It is read once, at authentication, against a
+  snapshot that is never refreshed; revoking a live session is an out-of-band
+  eviction that a single filter enforces ahead of every matcher and handler.
+  A per-route sweep for a deactivated identity would therefore produce one
+  test per route that all fail for the same single cause — the redundant-copies
+  anti-pattern this plan names. What genuinely varies is the chain, not the
+  route, so the guidance now points at per-chain expiry semantics, the untested
+  interaction between CSRF and an expired session on a browser-chain POST, and
+  a configuration assertion that no chain can be added without expiry
+  enforcement.
+- **Not backported**: research also recommended extending risk #3's "must
+  challenge" cell to cover a denial test that has no working permission
+  counterpart, which passes equally when the rule denies everyone. Left for a
+  later decision; the finding is recorded in the Phase 2 research document.
+- **§3 Phase 2's goal cell was also corrected**, at the user's explicit
+  direction. It previously read "or skipping the account-state check … across
+  the enumerated route set", carrying the same per-route premise. It now names
+  the two distinct protections the phase must deliver: a derived route set for
+  risk #3, and per-chain expiry enforcement for risk #6. Only the Goal cell
+  changed; the phase name, risks, test types, status and change folder are
+  untouched.
+
 ### Risk Response Guidance
 
 | Risk | What would prove protection | Must challenge | Context `/10x-research` must ground | Likely cheapest layer | Anti-pattern to avoid |
@@ -94,7 +123,7 @@ where it sits.
 | #3 | Loosening or removing an access rule makes a test fail — for every authenticated route **and every HTTP method on it**, not only the remembered ones | That existing green security tests cover all routes; that covering a route's GET covers its POST. Do **not** challenge the suite's honesty — research found no mocked security anywhere | The enumerable route inventory, which routes assert *denial*, and for which methods; plus whether a denial status is attributable to the rule under test rather than to CSRF | integration; the suite already exercises the real chain, so extend it rather than rebuild it | **ambiguous denial**: asserting a status that a missing CSRF token would also produce, so the test passes with the rule deleted |
 | #4 | A request carrying null, out-of-range (abs(lat) > 90, abs(lng) > 180), or transposed coordinates is rejected and no row is written | That the browser constrains what the server receives; that a map click is the only way a coordinate arrives | Where coordinates are validated, whether validation runs before or after normalisation (see `lessons.md`), and what the database column itself permits | unit for the range rule; integration where a database constraint is the real enforcer | mirroring the implementation's own bounds check — derive the expected bound from WGS-84, not from the code |
 | #5 | An oversized or wrong-type upload is refused before persistence, against a limit derived from a stated requirement rather than the current constant | That a passing validator means the request path enforces it; that the framework multipart limit and the validator agree | The effective limit at each layer (multipart config, validator, column type) and which one fires first | unit for the rule; integration for the request path | copying the production constant into the assertion, which green-lights whatever the constant becomes |
-| #6 | A deactivated account is denied on every authenticated route, proven by the same enumeration as #3 | That `isEnabled()` returning false is sufficient; that a login-level test covers routes reached by an already-live session | Enforcement points for account state, and how they differ from role enforcement | integration, reusing Phase 2's route inventory | accepting a mocked test as evidence for framework wiring — the precise failure `lessons.md` records |
+| #6 | An evicted session is refused with the correct semantics on **each chain** — the browser chain redirecting to the expired-login page, the API chain answering 401 with its documented JSON body — and a chain configured without session management fails a test | That account state is enforced per route — **it is not**: one filter denies every route by construction, so a per-route sweep is redundant copies. Also that `isEnabled()` returning false covers an already-live session; it does not | Grounded 2026-09-13: account state is read only inside authentication, against a snapshot captured at login; live-session revocation is an out-of-band eviction that a single filter enforces ahead of every matcher | a small number of targeted integration tests — one per chain, plus the untested interaction between CSRF and an expired session on a browser-chain POST — and one configuration assertion that every chain installs the expiry filter | **redundant copies**: one denial test per route for the deactivated identity, all failing for the same single cause |
 
 ## 3. Phased Rollout
 
@@ -105,7 +134,7 @@ orchestrator updates Status as artifacts appear on disk.
 | # | Phase name | Goal (one line) | Risks covered | Test types | Status | Change folder |
 |---|---|---|---|---|---|---|
 | 1 | Ownership and role denial | Prove a resident is denied another resident's report and every staff-only action, through the real filter chain | #1, #2 | integration | complete | `context/changes/testing-ownership-role-denial/` |
-| 2 | Route-denial inventory | Make loosening any access rule, or skipping the account-state check, fail a test across the enumerated route set | #3, #6 | integration | not started | — |
+| 2 | Route-denial inventory | Make loosening any access rule fail a test across the derived route set, and make removing session-expiry enforcement fail a test on each chain | #3, #6 | integration | planned | `context/changes/testing-route-denial-inventory/` |
 | 3 | Input contract at the server boundary | Reject invalid coordinates and abusive photo payloads server-side, independent of what the browser sends | #4, #5 | unit + integration | not started | — |
 | 4 | Quality-gates wiring | Make the test step explicit in CI and add coverage visibility over the modules phases 1–3 touched | cross-cutting | gates | not started | — |
 

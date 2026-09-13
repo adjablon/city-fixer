@@ -1,15 +1,12 @@
 package com.example.city_fix.report;
 
-import com.example.city_fix.TestcontainersConfig;
+import com.example.city_fix.IntegrationTest;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,24 +20,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class ReportWebControllerTest extends TestcontainersConfig {
-
-    private static final String PASSWORD = "password123";
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ReportRepository reportRepository;
+class ReportWebControllerTest extends IntegrationTest {
 
     @Autowired
     private ReportPhotoRepository reportPhotoRepository;
 
     @Test
     void submitWithPhoto_redirectsAndPersistsReportWithPhoto() throws Exception {
-        MockHttpSession session = authenticate("submit-photo@example.com");
+        MockHttpSession session = registerResident("submit-photo@example.com");
 
         mockMvc.perform(multipart("/reports")
                 .file(new MockMultipartFile("photo", "photo.jpg", "image/jpeg", jpegBytes()))
@@ -63,7 +50,7 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void submitWithPhoto_storesTheBytesUnchanged() throws Exception {
-        MockHttpSession session = authenticate("submit-roundtrip@example.com");
+        MockHttpSession session = registerResident("submit-roundtrip@example.com");
         // Deliberately past the 255-byte default @Column length: a column mapped as
         // anything but bytea would truncate here, and ddl-auto=update cannot repair that
         // once the column exists.
@@ -91,7 +78,7 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void submitWithoutPhoto_redirectsAndPersistsNoPhotoRow() throws Exception {
-        MockHttpSession session = authenticate("submit-nophoto@example.com");
+        MockHttpSession session = registerResident("submit-nophoto@example.com");
 
         mockMvc.perform(multipart("/reports")
                 .file(new MockMultipartFile("photo", "", "application/octet-stream", new byte[0]))
@@ -110,7 +97,7 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void submitWithoutCoordinates_reRendersFormAndPersistsNothing() throws Exception {
-        MockHttpSession session = authenticate("submit-nocoords@example.com");
+        MockHttpSession session = registerResident("submit-nocoords@example.com");
 
         mockMvc.perform(multipart("/reports")
                 .param("description", "Report without coordinates")
@@ -127,7 +114,7 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void submitOversizePhoto_reRendersFormKeepingThePinAndPersistsNothing() throws Exception {
-        MockHttpSession session = authenticate("submit-oversize@example.com");
+        MockHttpSession session = registerResident("submit-oversize@example.com");
         byte[] oversize = new byte[2 * 1024 * 1024 + 1];
         oversize[0] = (byte) 0xFF;
         oversize[1] = (byte) 0xD8;
@@ -155,7 +142,7 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void submitSpoofedImage_reRendersFormAndPersistsNothing() throws Exception {
-        MockHttpSession session = authenticate("submit-spoofed@example.com");
+        MockHttpSession session = registerResident("submit-spoofed@example.com");
 
         mockMvc.perform(multipart("/reports")
                 .file(new MockMultipartFile("photo", "photo.jpg", "image/jpeg", "#!/bin/sh".getBytes()))
@@ -175,8 +162,8 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void listReports_showsOnlyTheCallersOwnReports() throws Exception {
-        MockHttpSession owner = authenticate("list-owner@example.com");
-        MockHttpSession stranger = authenticate("list-stranger@example.com");
+        MockHttpSession owner = registerResident("list-owner@example.com");
+        MockHttpSession stranger = registerResident("list-stranger@example.com");
         submitReport(owner, "52.140000", "21.040000", "Owner's only report", "GRAFFITI");
         submitReport(stranger, "52.150000", "21.050000", "Stranger's only report", "SIGN");
 
@@ -191,7 +178,7 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void detailAndPhotoForOwnReport_return200() throws Exception {
-        MockHttpSession session = authenticate("own-detail@example.com");
+        MockHttpSession session = registerResident("own-detail@example.com");
         submitReport(session, "52.160000", "21.060000", "My own detailed report", "POTHOLE");
         Long reportId = findByDescription("My own detailed report").getId();
 
@@ -208,8 +195,8 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void detailForAnotherUsersReport_returns404() throws Exception {
-        MockHttpSession owner = authenticate("cross-owner@example.com");
-        MockHttpSession stranger = authenticate("cross-stranger@example.com");
+        MockHttpSession owner = registerResident("cross-owner@example.com");
+        MockHttpSession stranger = registerResident("cross-stranger@example.com");
         submitReport(owner, "52.170000", "21.070000", "Report the stranger must not see", "TRASH");
         Long reportId = findByDescription("Report the stranger must not see").getId();
 
@@ -219,8 +206,8 @@ class ReportWebControllerTest extends TestcontainersConfig {
 
     @Test
     void photoForAnotherUsersReport_returns404() throws Exception {
-        MockHttpSession owner = authenticate("cross-photo-owner@example.com");
-        MockHttpSession stranger = authenticate("cross-photo-stranger@example.com");
+        MockHttpSession owner = registerResident("cross-photo-owner@example.com");
+        MockHttpSession stranger = registerResident("cross-photo-stranger@example.com");
         submitReport(owner, "52.180000", "21.080000", "Photo the stranger must not fetch", "OTHER");
         Long reportId = findByDescription("Photo the stranger must not fetch").getId();
 
@@ -245,55 +232,5 @@ class ReportWebControllerTest extends TestcontainersConfig {
         mockMvc.perform(get("/reports/1/photo"))
             .andExpect(status().is3xxRedirection())
             .andExpect(header().string("Location", "/login"));
-    }
-
-    private MockHttpSession authenticate(String email) throws Exception {
-        String credentials = """
-            {"email": "%s", "password": "%s"}
-            """.formatted(email, PASSWORD);
-
-        mockMvc.perform(post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(credentials))
-            .andExpect(status().isCreated());
-
-        MvcResult login = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(credentials))
-            .andExpect(status().isOk())
-            .andReturn();
-
-        return (MockHttpSession) login.getRequest().getSession();
-    }
-
-    private void submitReport(MockHttpSession session,
-                              String latitude,
-                              String longitude,
-                              String description,
-                              String category) throws Exception {
-        mockMvc.perform(multipart("/reports")
-                .file(new MockMultipartFile("photo", "photo.jpg", "image/jpeg", jpegBytes()))
-                .param("latitude", latitude)
-                .param("longitude", longitude)
-                .param("description", description)
-                .param("category", category)
-                .session(session)
-                .with(csrf()))
-            .andExpect(status().is3xxRedirection());
-    }
-
-    private Report findByDescription(String description) {
-        return reportRepository.findAll().stream()
-            .filter(report -> description.equals(report.getDescription()))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("No report persisted with description: " + description));
-    }
-
-    private static byte[] jpegBytes() {
-        byte[] content = new byte[64];
-        content[0] = (byte) 0xFF;
-        content[1] = (byte) 0xD8;
-        content[2] = (byte) 0xFF;
-        return content;
     }
 }

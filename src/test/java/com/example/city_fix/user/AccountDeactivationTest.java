@@ -1,20 +1,15 @@
 package com.example.city_fix.user;
 
-import com.example.city_fix.TestcontainersConfig;
+import com.example.city_fix.IntegrationTest;
 import com.example.city_fix.auth.CustomUserDetails;
-import com.example.city_fix.report.ReportRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.session.SessionInformation;
 import org.springframework.security.core.session.SessionRegistry;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,20 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * eviction across both filter chains (Phase 2), and the cross-role and report-integrity
  * guarantees (Phase 5).
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-class AccountDeactivationTest extends TestcontainersConfig {
-
-    private static final String PASSWORD = "password123";
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+class AccountDeactivationTest extends IntegrationTest {
 
     @Autowired
     private SessionRegistry sessionRegistry;
@@ -56,9 +38,6 @@ class AccountDeactivationTest extends TestcontainersConfig {
 
     @Autowired
     private ApplicationContext applicationContext;
-
-    @Autowired
-    private ReportRepository reportRepository;
 
     @Test
     void deactivatedAccount_apiLogin_isRejectedWithTheGenericMessage() throws Exception {
@@ -299,28 +278,5 @@ class AccountDeactivationTest extends TestcontainersConfig {
         mockMvc.perform(get("/staff/reports/{id}", reportId).session(staffSession))
             .andExpect(status().isOk())
             .andExpect(content().string(containsString(residentEmail)));
-    }
-
-    private MockHttpSession login(String email) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(credentials(email)))
-            .andExpect(status().isOk())
-            .andReturn();
-        return (MockHttpSession) result.getRequest().getSession();
-    }
-
-    /** Nothing is transactional and the container is shared, so every test owns its email. */
-    private String persistUser(String email, Role role, boolean active) {
-        User user = new User(email, passwordEncoder.encode(PASSWORD), role);
-        if (!active) {
-            user.deactivate();
-        }
-        userRepository.save(user);
-        return email;
-    }
-
-    private static String credentials(String email) {
-        return "{\"email\": \"" + email + "\", \"password\": \"" + PASSWORD + "\"}";
     }
 }

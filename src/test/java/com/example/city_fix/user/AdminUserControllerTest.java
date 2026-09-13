@@ -1,16 +1,12 @@
 package com.example.city_fix.user;
 
-import com.example.city_fix.TestcontainersConfig;
+import com.example.city_fix.IntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,20 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class AdminUserControllerTest extends TestcontainersConfig {
-
-    private static final String PASSWORD = "password123";
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+class AdminUserControllerTest extends IntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -71,9 +54,9 @@ class AdminUserControllerTest extends TestcontainersConfig {
     @Test
     @WithMockUser(roles = "ADMIN")
     void accountList_rendersManageableAccountsAndNeverAnAdminRow() throws Exception {
-        String staffEmail = persist("list-staff@example.com", Role.STAFF);
-        String residentEmail = persist("list-resident@example.com", Role.RESIDENT);
-        String adminEmail = persist("list-admin@example.com", Role.ADMIN);
+        String staffEmail = persistUser("list-staff@example.com", Role.STAFF);
+        String residentEmail = persistUser("list-resident@example.com", Role.RESIDENT);
+        String adminEmail = persistUser("list-admin@example.com", Role.ADMIN);
 
         // Walk every page: the container is shared and non-transactional, so this test's rows
         // can sit on any page. Checking all of them also makes the admin-exclusion assertion
@@ -89,7 +72,7 @@ class AdminUserControllerTest extends TestcontainersConfig {
     @WithMockUser(roles = "ADMIN")
     void accountList_isPagedSoItCannotGrowWithoutBound() throws Exception {
         for (int i = 0; i < 30; i++) {
-            persist("paging-" + i + "-" + System.nanoTime() + "@example.com", Role.RESIDENT);
+            persistUser("paging-" + i + "-" + System.nanoTime() + "@example.com", Role.RESIDENT);
         }
 
         String firstPage = mockMvc.perform(get("/admin/users"))
@@ -173,7 +156,7 @@ class AdminUserControllerTest extends TestcontainersConfig {
     @Test
     @WithMockUser(roles = "ADMIN")
     void createStaff_withATakenEmail_reportsItRatherThanFailing() throws Exception {
-        String existing = persist("already-there@example.com", Role.RESIDENT);
+        String existing = persistUser("already-there@example.com", Role.RESIDENT);
 
         mockMvc.perform(post("/admin/users")
                 .param("email", existing)
@@ -218,7 +201,7 @@ class AdminUserControllerTest extends TestcontainersConfig {
     @Test
     @WithMockUser(roles = "ADMIN")
     void setActive_flipsTheFlagAndRedirects() throws Exception {
-        String email = persist("toggle-me@example.com", Role.STAFF);
+        String email = persistUser("toggle-me@example.com", Role.STAFF);
         Long id = userRepository.findByEmail(email).orElseThrow().getId();
 
         mockMvc.perform(post("/admin/users/{id}/active", id)
@@ -238,7 +221,7 @@ class AdminUserControllerTest extends TestcontainersConfig {
     @Test
     @WithMockUser(roles = "ADMIN")
     void setActive_onAnAdminRow_isRefused() throws Exception {
-        String adminEmail = persist("untouchable-admin@example.com", Role.ADMIN);
+        String adminEmail = persistUser("untouchable-admin@example.com", Role.ADMIN);
         Long id = userRepository.findByEmail(adminEmail).orElseThrow().getId();
 
         // Admin rows are never listed, so reaching this route means a hand-crafted request.
@@ -261,7 +244,7 @@ class AdminUserControllerTest extends TestcontainersConfig {
         // The whole slice in one walk, driven entirely through the admin surface rather than
         // the service: create → the new account logs in → deactivate → its live session dies
         // and re-login is refused → reactivate → it logs in again.
-        persist("flow-admin@example.com", Role.ADMIN);
+        persistUser("flow-admin@example.com", Role.ADMIN);
         MockHttpSession adminSession = login("flow-admin@example.com");
 
         mockMvc.perform(post("/admin/users")
@@ -301,23 +284,5 @@ class AdminUserControllerTest extends TestcontainersConfig {
         // 4.9: reactivation restores access.
         mockMvc.perform(get("/staff/reports").session(login("flow.staff@example.com")))
             .andExpect(status().isOk());
-    }
-
-    private MockHttpSession login(String email) throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(credentials(email)))
-            .andExpect(status().isOk())
-            .andReturn();
-        return (MockHttpSession) result.getRequest().getSession();
-    }
-
-    private static String credentials(String email) {
-        return "{\"email\": \"" + email + "\", \"password\": \"" + PASSWORD + "\"}";
-    }
-
-    private String persist(String email, Role role) {
-        userRepository.save(new User(email, passwordEncoder.encode(PASSWORD), role));
-        return email;
     }
 }
