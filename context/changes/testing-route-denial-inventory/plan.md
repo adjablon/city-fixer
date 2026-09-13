@@ -498,11 +498,11 @@ None — test-only, no schema or environment impact, nothing to run outside the 
 
 #### Automated
 
-- [x] 5.1 No Phase-2 placeholder remains
-- [x] 5.2 §3 row 2 reads `complete`
-- [x] 5.3 No test code blocks added to the plan
+- [x] 5.1 No Phase-2 placeholder remains — 49f5342
+- [x] 5.2 §3 row 2 reads `complete` — 49f5342
+- [x] 5.3 No test code blocks added to the plan — 49f5342
 
 #### Manual
 
-- [x] 5.4 A reader following §6.2 would add a table row, not a new test class
-- [x] 5.5 The §6.6 note states the residual filter-route gap honestly
+- [x] 5.4 A reader following §6.2 would add a table row, not a new test class — 49f5342
+- [x] 5.5 The §6.6 note states the residual filter-route gap honestly — 49f5342
