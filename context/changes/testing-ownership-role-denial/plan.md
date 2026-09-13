@@ -288,26 +288,26 @@ None — test-only change, no schema or environment impact, nothing to run outsi
 
 #### Automated
 
-- [x] 1.1 The three new tests pass: `./mvnw test -Dtest=StaffReportControllerTest`
-- [x] 1.2 The full suite still passes: `./mvnw test`
-- [x] 1.3 The project compiles: `./mvnw -q compile`
+- [x] 1.1 The three new tests pass: `./mvnw test -Dtest=StaffReportControllerTest` — 5fe4e79
+- [x] 1.2 The full suite still passes: `./mvnw test` — 5fe4e79
+- [x] 1.3 The project compiles: `./mvnw -q compile` — 5fe4e79
 
 #### Manual
 
-- [x] 1.4 Mutation check A: matcher narrowed to GET makes the resident test fail
-- [x] 1.5 Mutation check B: matcher narrowed to `hasRole("STAFF")` makes the admin test fail
-- [x] 1.6 Mutation check C: CSRF disabled makes the no-CSRF test fail while the resident test still passes
-- [x] 1.7 Each new test uses a unique email and report description
+- [x] 1.4 Mutation check A: matcher narrowed to GET makes the resident test fail — 5fe4e79
+- [x] 1.5 Mutation check B: matcher narrowed to `hasRole("STAFF")` makes the admin test fail — 5fe4e79
+- [x] 1.6 Mutation check C: CSRF disabled makes the no-CSRF test fail while the resident test still passes — 5fe4e79
+- [x] 1.7 Each new test uses a unique email and report description — 5fe4e79
 
 ### Phase 2: Cookbook and rollout sync
 
 #### Automated
 
-- [ ] 2.1 No placeholder text remains in the two filled sections
-- [ ] 2.2 §3 row 1 reads `complete`
-- [ ] 2.3 No test code blocks were added to the plan
+- [x] 2.1 No placeholder text remains in the two filled sections
+- [x] 2.2 §3 row 1 reads `complete`
+- [x] 2.3 No test code blocks were added to the plan
 
 #### Manual
 
-- [ ] 2.4 A new reader can follow §6.1 without rediscovering the CSRF ambiguity
-- [ ] 2.5 §6.5 states the integration-over-unit rule consistently with `lessons.md`
+- [x] 2.4 A new reader can follow §6.1 without rediscovering the CSRF ambiguity
+- [x] 2.5 §6.5 states the integration-over-unit rule consistently with `lessons.md`
