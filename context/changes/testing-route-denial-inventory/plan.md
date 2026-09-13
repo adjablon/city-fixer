@@ -457,29 +457,29 @@ None — test-only, no schema or environment impact, nothing to run outside the 
 
 #### Automated
 
-- [x] 2.1 New test passes: `./mvnw test -Dtest=RouteInventoryTest`
-- [x] 2.2 Full suite passes: `./mvnw test`
+- [x] 2.1 New test passes: `./mvnw test -Dtest=RouteInventoryTest` — a50737a
+- [x] 2.2 Full suite passes: `./mvnw test` — a50737a
 
 #### Manual
 
-- [x] 2.3 A throwaway route makes `RouteInventoryTest` fail and names it
-- [x] 2.4 The derived set contains `/error`
-- [x] 2.5 The failure message is actionable to someone who did not write it
+- [x] 2.3 A throwaway route makes `RouteInventoryTest` fail and names it — a50737a
+- [x] 2.4 The derived set contains `/error` — a50737a
+- [x] 2.5 The failure message is actionable to someone who did not write it — a50737a
 
 ### Phase 3: The authorization matrix
 
 #### Automated
 
-- [ ] 3.1 Matrix test passes: `./mvnw test -Dtest=RouteAuthorizationMatrixTest`
-- [ ] 3.2 Full suite passes: `./mvnw test`
-- [ ] 3.3 Every table row produced a case
+- [x] 3.1 Matrix test passes: `./mvnw test -Dtest=RouteAuthorizationMatrixTest`
+- [x] 3.2 Full suite passes: `./mvnw test`
+- [x] 3.3 Every table row produced a case
 
 #### Manual
 
-- [ ] 3.4 Mutation A: `/reports/new` denying everyone fails the RESIDENT allow cell
-- [ ] 3.5 Mutation B: deleting the `/admin/**` matcher fails resident and staff deny cells
-- [ ] 3.6 Mutation C: `/staff/**` as `hasRole("STAFF")` fails the admin allow cells
-- [ ] 3.7 No two mutations fail the same single cell
+- [x] 3.4 Mutation A: `/reports/new` denying everyone fails the RESIDENT allow cell
+- [x] 3.5 Mutation B: deleting the `/admin/**` matcher fails resident and staff deny cells
+- [x] 3.6 Mutation C: `/staff/**` as `hasRole("STAFF")` fails the admin allow cells
+- [x] 3.7 No two mutations fail the same single cell
 
 ### Phase 4: Account-state expiry
 

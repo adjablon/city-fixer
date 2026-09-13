@@ -114,13 +114,19 @@ public final class RouteAuthorizationTable {
         expect(get("/reports/{id}"), loginRedirect, granted, granted, granted);
         expect(get("/reports/{id}/photo"), loginRedirect, granted, granted, granted);
 
-        // Triage surface. Staff and admin only.
+        // Triage surface. Staff and admin only. The matcher backing these rows must stay ahead of
+        // anyRequest().authenticated() in SecurityConfig, which would otherwise shadow it and
+        // admit every logged-in user.
         expect(get("/staff/reports"), loginRedirect, forbidden, granted, granted);
         expect(get("/staff/reports/{id}"), loginRedirect, forbidden, granted, granted);
         expect(get("/staff/reports/{id}/photo"), loginRedirect, forbidden, granted, granted);
         expect(post("/staff/reports/{id}/status"), loginRedirect, forbidden, granted, granted);
 
-        // Account management. Admin only — deliberately not mirroring the staff surface.
+        // Account management. Admin only, and deliberately NOT mirroring the staff surface, which
+        // admits STAFF and ADMIN alike — these rows are what catches someone "fixing" the matcher
+        // for consistency. AdminUserController carries no @PreAuthorize by design, so the matcher
+        // is the only thing protecting the two POST rows: narrowing it to GET would open account
+        // creation and deactivation to staff.
         expect(get("/admin/users"), loginRedirect, forbidden, forbidden, granted);
         expect(get("/admin/users/new"), loginRedirect, forbidden, forbidden, granted);
         expect(post("/admin/users"), loginRedirect, forbidden, forbidden, granted);

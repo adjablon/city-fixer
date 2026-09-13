@@ -12,6 +12,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Config-level cases that assert more than authorization: response bodies, explicit 200s, and
+ * CSRF enforcement. Plain route-versus-identity denial now lives in
+ * {@link RouteAuthorizationMatrixTest}, driven by {@link RouteAuthorizationTable}.
+ */
 class SecurityConfigTest extends IntegrationTest {
 
     @Test
@@ -63,59 +68,10 @@ class SecurityConfigTest extends IntegrationTest {
     }
 
     @Test
-    void protectedWebPath_redirectsToLogin_whenUnauthenticated() throws Exception {
-        mockMvc.perform(get("/"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
-    }
-
-    @Test
     @WithMockUser(roles = "RESIDENT")
     void protectedWebPath_accessible_whenAuthenticated() throws Exception {
         mockMvc.perform(get("/"))
             .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithMockUser(roles = "RESIDENT")
-    void adminPath_forbiddenToResident() throws Exception {
-        mockMvc.perform(get("/admin/users"))
-            .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(roles = "STAFF")
-    void adminPath_forbiddenToStaff() throws Exception {
-        // The important one: /admin/** is ADMIN-only and deliberately does NOT mirror
-        // /staff/**, which admits STAFF and ADMIN alike. This is what would catch someone
-        // "fixing" the matcher for consistency.
-        mockMvc.perform(get("/admin/users"))
-            .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void adminPath_redirectsToLoginWhenUnauthenticated() throws Exception {
-        mockMvc.perform(get("/admin/users"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
-    }
-
-    @Test
-    @WithMockUser(roles = "STAFF")
-    void adminWriteRoutes_forbiddenToStaff() throws Exception {
-        // The matcher is the ONLY thing protecting these — AdminUserController carries no
-        // @PreAuthorize by design. Narrowing /admin/** to GET would open account creation and
-        // deactivation to staff, and without these two cases the suite would stay green.
-        mockMvc.perform(post("/admin/users")
-                .param("email", "intruder@example.com")
-                .param("password", "password123")
-                .with(csrf()))
-            .andExpect(status().isForbidden());
-
-        mockMvc.perform(post("/admin/users/1/active")
-                .param("active", "false")
-                .with(csrf()))
-            .andExpect(status().isForbidden());
     }
 
     @Test
@@ -129,26 +85,10 @@ class SecurityConfigTest extends IntegrationTest {
     }
 
     @Test
-    @WithMockUser(roles = "RESIDENT")
-    void staffPath_forbiddenToResident() throws Exception {
-        // Pinned at the config level, not only through the controller: the /staff/** matcher
-        // must stay ahead of anyRequest().authenticated(), which would otherwise shadow it.
-        mockMvc.perform(get("/staff/reports"))
-            .andExpect(status().isForbidden());
-    }
-
-    @Test
     @WithMockUser(roles = "STAFF")
     void staffPath_allowedToStaff() throws Exception {
         mockMvc.perform(get("/staff/reports"))
             .andExpect(status().isOk());
-    }
-
-    @Test
-    void staffPath_unauthenticated_redirectsToLogin() throws Exception {
-        mockMvc.perform(get("/staff/reports"))
-            .andExpect(status().is3xxRedirection())
-            .andExpect(header().string("Location", "/login"));
     }
 
     @Test
