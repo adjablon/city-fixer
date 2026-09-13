@@ -202,6 +202,63 @@ class StaffReportControllerTest extends TestcontainersConfig {
             .andExpect(status().isForbidden());
     }
 
+    @Test
+    void statusChange_isForbiddenToResident_evenForTheirOwnReport() throws Exception {
+        MockHttpSession resident = registerResident("status-denied-resident@example.com");
+        submitReport(resident, "Report whose status its reporter must not change");
+        Long reportId = findByDescription("Report whose status its reporter must not change").getId();
+
+        // The CSRF token is load-bearing. Without it the CSRF filter rejects the request before
+        // authorization runs, the assertion still sees 403, and this test would keep passing with
+        // the /staff/** role rule deleted.
+        mockMvc.perform(post("/staff/reports/" + reportId + "/status")
+                .param("status", "RESOLVED")
+                .session(resident)
+                .with(csrf()))
+            .andExpect(status().isForbidden());
+
+        Report persisted = reportRepository.findById(reportId).orElseThrow();
+        assertThat(persisted.getStatus()).isEqualTo(ReportStatus.NEW);
+        assertThat(persisted.getStatusUpdatedAt()).isNull();
+    }
+
+    @Test
+    void statusChange_withoutCsrfToken_isForbiddenEvenToStaff() throws Exception {
+        MockHttpSession resident = registerResident("status-nocsrf-owner@example.com");
+        submitReport(resident, "Report the CSRF filter must protect");
+        Long reportId = findByDescription("Report the CSRF filter must protect").getId();
+
+        MockHttpSession staff = authenticateAs("status-nocsrf-staff@example.com", Role.STAFF);
+
+        mockMvc.perform(post("/staff/reports/" + reportId + "/status")
+                .param("status", "RESOLVED")
+                .session(staff))
+            .andExpect(status().isForbidden());
+
+        Report persisted = reportRepository.findById(reportId).orElseThrow();
+        assertThat(persisted.getStatus()).isEqualTo(ReportStatus.NEW);
+        assertThat(persisted.getStatusUpdatedAt()).isNull();
+    }
+
+    @Test
+    void statusChange_isPermittedToAdmin() throws Exception {
+        MockHttpSession resident = registerResident("status-admin-owner@example.com");
+        submitReport(resident, "Report an admin triages");
+        Long reportId = findByDescription("Report an admin triages").getId();
+
+        MockHttpSession admin = authenticateAs("status-admin@example.com", Role.ADMIN);
+
+        mockMvc.perform(post("/staff/reports/" + reportId + "/status")
+                .param("status", "IN_PROGRESS")
+                .session(admin)
+                .with(csrf()))
+            .andExpect(status().is3xxRedirection())
+            .andExpect(redirectedUrl("/staff/reports/" + reportId));
+
+        assertThat(reportRepository.findById(reportId).orElseThrow().getStatus())
+            .isEqualTo(ReportStatus.IN_PROGRESS);
+    }
+
     private void changeStatus(MockHttpSession staff, Long reportId, String status) throws Exception {
         mockMvc.perform(post("/staff/reports/" + reportId + "/status")
                 .param("status", status)
