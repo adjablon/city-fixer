@@ -35,11 +35,18 @@ jobs:
       # pre-auth baseline from May; the cause turned out to be a 401 nobody could see.
       # The status is captured and checked explicitly rather than with --fail-with-body, so the
       # code is reported even on responses that carry no body at all.
+      # The credentials go through env rather than being interpolated into the script. The site
+      # publishing user is "$cityfix-app-aj" — a literal leading $ — and a ${{ secrets.X }}
+      # substitution is textual, so bash then expanded "$cityfix" as an undefined variable and
+      # sent "-aj:<password>" instead. That produced a 401 indistinguishable from a stale secret.
       - name: Deploy to Azure App Service
+        env:
+          PUBLISH_USER: ${{ secrets.AZURE_WEBAPP_PUBLISH_USER }}
+          PUBLISH_PASS: ${{ secrets.AZURE_WEBAPP_PUBLISH_PASS }}
         run: |
           status=$(curl -sS -X POST \
             -w '%{http_code}' -o /tmp/publish.log \
-            -u "${{ secrets.AZURE_WEBAPP_PUBLISH_USER }}:${{ secrets.AZURE_WEBAPP_PUBLISH_PASS }}" \
+            -u "$PUBLISH_USER:$PUBLISH_PASS" \
             --data-binary @target/city-fix-0.0.1-SNAPSHOT.jar \
             -H "Content-Type: application/octet-stream" \
             "https://cityfix-app-aj.scm.azurewebsites.net/api/publish?type=jar") || status=000
@@ -52,9 +59,10 @@ jobs:
           case "$status" in
             401|403)
               echo
-              echo "Kudu rejected the credentials. Site publishing credentials rotate, and the"
-              echo "AZURE_WEBAPP_PUBLISH_USER / AZURE_WEBAPP_PUBLISH_PASS secrets are the usual"
-              echo "thing left stale. Read the current pair with:"
+              echo "Kudu rejected the credentials. Either the AZURE_WEBAPP_PUBLISH_* secrets are"
+              echo "stale, or something re-expanded them — the publishing user contains a literal"
+              echo "\$, so it must reach curl through env and never through a \${{ }} substitution."
+              echo "Read the current pair with:"
               echo "  az webapp deployment list-publishing-credentials -g cityfix-rg -n cityfix-app-aj"
               ;;
             000)
