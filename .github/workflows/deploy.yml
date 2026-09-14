@@ -32,18 +32,37 @@ jobs:
 
       # A bare curl exits 0 on any HTTP error it can connect to, so this step used to pass
       # whatever Kudu replied. Five deploys reported success while production kept serving the
-      # pre-auth baseline. --fail-with-body makes a 4xx/5xx fail the job and prints Kudu's reason.
+      # pre-auth baseline from May; the cause turned out to be a 401 nobody could see.
+      # The status is captured and checked explicitly rather than with --fail-with-body, so the
+      # code is reported even on responses that carry no body at all.
       - name: Deploy to Azure App Service
         run: |
-          status=$(curl -sS -X POST --fail-with-body \
+          status=$(curl -sS -X POST \
             -w '%{http_code}' -o /tmp/publish.log \
             -u "${{ secrets.AZURE_WEBAPP_PUBLISH_USER }}:${{ secrets.AZURE_WEBAPP_PUBLISH_PASS }}" \
             --data-binary @target/city-fix-0.0.1-SNAPSHOT.jar \
             -H "Content-Type: application/octet-stream" \
-            "https://cityfix-app-aj.scm.azurewebsites.net/api/publish?type=jar") || {
-              echo "publish failed; Kudu said:"; cat /tmp/publish.log; exit 1;
-            }
-          echo "publish returned HTTP $status"
+            "https://cityfix-app-aj.scm.azurewebsites.net/api/publish?type=jar") || status=000
+          echo "publish returned HTTP ${status}"
+          case "$status" in
+            2??) exit 0 ;;
+          esac
+          echo "--- Kudu response body ---"
+          if [ -s /tmp/publish.log ]; then cat /tmp/publish.log; else echo "(none)"; fi
+          case "$status" in
+            401|403)
+              echo
+              echo "Kudu rejected the credentials. Site publishing credentials rotate, and the"
+              echo "AZURE_WEBAPP_PUBLISH_USER / AZURE_WEBAPP_PUBLISH_PASS secrets are the usual"
+              echo "thing left stale. Read the current pair with:"
+              echo "  az webapp deployment list-publishing-credentials -g cityfix-rg -n cityfix-app-aj"
+              ;;
+            000)
+              echo
+              echo "curl could not complete the request at all — network or DNS, not auth."
+              ;;
+          esac
+          exit 1
 
       # The step above only proves Kudu accepted the upload. This one proves the running app is
       # actually the application: /login exists in every build since F-01 and returns 200 to an
