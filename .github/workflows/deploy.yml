@@ -61,7 +61,8 @@ jobs:
               echo
               echo "Kudu rejected the credentials. Either the AZURE_WEBAPP_PUBLISH_* secrets are"
               echo "stale, or something re-expanded them — the publishing user contains a literal"
-              echo "\$, so it must reach curl through env and never through a \${{ }} substitution."
+              echo "dollar sign, so it must reach curl through step env, never through a workflow"
+              echo "expression substituted into the script."
               echo "Read the current pair with:"
               echo "  az webapp deployment list-publishing-credentials -g cityfix-rg -n cityfix-app-aj"
               ;;
