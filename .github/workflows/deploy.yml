@@ -30,10 +30,36 @@ jobs:
           path: target/city-fix-0.0.1-SNAPSHOT.jar
           retention-days: 30
 
+      # A bare curl exits 0 on any HTTP error it can connect to, so this step used to pass
+      # whatever Kudu replied. Five deploys reported success while production kept serving the
+      # pre-auth baseline. --fail-with-body makes a 4xx/5xx fail the job and prints Kudu's reason.
       - name: Deploy to Azure App Service
         run: |
-          curl -X POST \
+          status=$(curl -sS -X POST --fail-with-body \
+            -w '%{http_code}' -o /tmp/publish.log \
             -u "${{ secrets.AZURE_WEBAPP_PUBLISH_USER }}:${{ secrets.AZURE_WEBAPP_PUBLISH_PASS }}" \
             --data-binary @target/city-fix-0.0.1-SNAPSHOT.jar \
             -H "Content-Type: application/octet-stream" \
-            "https://cityfix-app-aj.scm.azurewebsites.net/api/publish?type=jar"
+            "https://cityfix-app-aj.scm.azurewebsites.net/api/publish?type=jar") || {
+              echo "publish failed; Kudu said:"; cat /tmp/publish.log; exit 1;
+            }
+          echo "publish returned HTTP $status"
+
+      # The step above only proves Kudu accepted the upload. This one proves the running app is
+      # actually the application: /login exists in every build since F-01 and returns 200 to an
+      # unauthenticated request, whereas the baseline answers 404. Without this, a silently
+      # rejected or truncated upload is indistinguishable from a successful deploy.
+      - name: Verify the running app serves the application
+        run: |
+          url=https://cityfix-app-aj.azurewebsites.net/login
+          for attempt in $(seq 1 30); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url" || echo 000)
+            if [ "$status" = "200" ]; then
+              echo "verified: /login returned 200 after ${attempt} attempt(s)"
+              exit 0
+            fi
+            echo "attempt ${attempt}: /login returned ${status}; retrying in 10s"
+            sleep 10
+          done
+          echo "/login never returned 200 — the deployed build is not serving the application"
+          exit 1
