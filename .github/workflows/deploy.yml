@@ -30,10 +30,64 @@ jobs:
           path: target/city-fix-0.0.1-SNAPSHOT.jar
           retention-days: 30
 
+      # A bare curl exits 0 on any HTTP error it can connect to, so this step used to pass
+      # whatever Kudu replied. Five deploys reported success while production kept serving the
+      # pre-auth baseline from May; the cause turned out to be a 401 nobody could see.
+      # The status is captured and checked explicitly rather than with --fail-with-body, so the
+      # code is reported even on responses that carry no body at all.
+      # The credentials go through env rather than being interpolated into the script. The site
+      # publishing user is "$cityfix-app-aj" — a literal leading $ — and a ${{ secrets.X }}
+      # substitution is textual, so bash then expanded "$cityfix" as an undefined variable and
+      # sent "-aj:<password>" instead. That produced a 401 indistinguishable from a stale secret.
       - name: Deploy to Azure App Service
+        env:
+          PUBLISH_USER: ${{ secrets.AZURE_WEBAPP_PUBLISH_USER }}
+          PUBLISH_PASS: ${{ secrets.AZURE_WEBAPP_PUBLISH_PASS }}
         run: |
-          curl -X POST \
-            -u "${{ secrets.AZURE_WEBAPP_PUBLISH_USER }}:${{ secrets.AZURE_WEBAPP_PUBLISH_PASS }}" \
+          status=$(curl -sS -X POST \
+            -w '%{http_code}' -o /tmp/publish.log \
+            -u "$PUBLISH_USER:$PUBLISH_PASS" \
             --data-binary @target/city-fix-0.0.1-SNAPSHOT.jar \
             -H "Content-Type: application/octet-stream" \
-            "https://cityfix-app-aj.scm.azurewebsites.net/api/publish?type=jar"
+            "https://cityfix-app-aj.scm.azurewebsites.net/api/publish?type=jar") || status=000
+          echo "publish returned HTTP ${status}"
+          case "$status" in
+            2??) exit 0 ;;
+          esac
+          echo "--- Kudu response body ---"
+          if [ -s /tmp/publish.log ]; then cat /tmp/publish.log; else echo "(none)"; fi
+          case "$status" in
+            401|403)
+              echo
+              echo "Kudu rejected the credentials. Either the AZURE_WEBAPP_PUBLISH_* secrets are"
+              echo "stale, or something re-expanded them — the publishing user contains a literal"
+              echo "dollar sign, so it must reach curl through step env, never through a workflow"
+              echo "expression substituted into the script."
+              echo "Read the current pair with:"
+              echo "  az webapp deployment list-publishing-credentials -g cityfix-rg -n cityfix-app-aj"
+              ;;
+            000)
+              echo
+              echo "curl could not complete the request at all — network or DNS, not auth."
+              ;;
+          esac
+          exit 1
+
+      # The step above only proves Kudu accepted the upload. This one proves the running app is
+      # actually the application: /login exists in every build since F-01 and returns 200 to an
+      # unauthenticated request, whereas the baseline answers 404. Without this, a silently
+      # rejected or truncated upload is indistinguishable from a successful deploy.
+      - name: Verify the running app serves the application
+        run: |
+          url=https://cityfix-app-aj.azurewebsites.net/login
+          for attempt in $(seq 1 30); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url" || echo 000)
+            if [ "$status" = "200" ]; then
+              echo "verified: /login returned 200 after ${attempt} attempt(s)"
+              exit 0
+            fi
+            echo "attempt ${attempt}: /login returned ${status}; retrying in 10s"
+            sleep 10
+          done
+          echo "/login never returned 200 — the deployed build is not serving the application"
+          exit 1

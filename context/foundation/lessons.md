@@ -44,14 +44,54 @@
 - **Rule**: A change that needs a step run outside the repo — an env var, a manual DDL statement, a one-off backfill, a platform setting — copies that step into this file before `/10x-archive` runs, with the concrete command and how to verify it. Delete the entry once it has been performed. Archiving a change does not perform its deploy steps, and a plan is not a task tracker.
 - **Applies to**: plan (state deploy-time steps explicitly), impl review (check they have a live home), archive (copy them out before sealing the folder).
 
+## A green deploy step proves nothing; only a probe of the running app does
+
+- **Context**: `.github/workflows/deploy.yml` — the publish step was a bare `curl` POST to Kudu's
+  `/api/publish`, with no status check and nothing afterwards.
+- **Problem**: `curl` exits 0 on any HTTP status it can connect to, so the step reported success
+  on a `401` for four months. Every run was green while production kept serving the pre-auth
+  May baseline — `/login`, `/register` and `/reports` all answered 404, `AdminSeeder` was not in
+  the running build, and the `ADMIN_EMAIL` / `ADMIN_PASSWORD` settings were read by nobody. The
+  cause compounded the invisibility: the site publishing user is `$cityfix-app-aj`, and a
+  `secrets.*` reference is substituted into the run script *textually*, so bash expanded
+  `$cityfix` as an undefined variable and sent `-aj:<password>`. The resulting 401 was
+  indistinguishable from a stale secret and survived a credential rotation.
+- **Rule**: three parts, and the third is the one that actually catches this class of bug.
+  (a) A deploy step must fail on a non-2xx and print the response body and status — never rely on
+  the exit code of a bare `curl`. (b) Any secret that might contain a shell metacharacter reaches
+  the shell through step `env:`, never through an expression interpolated into the script.
+  (c) A deploy is not verified until something requests a route from the *running* app that only
+  the new build can serve. A publish returning 200 proves the upload was accepted, not that the
+  process restarted onto it.
+- **Applies to**: any CI/CD deploy step; any workflow referencing a secret inside a `run:` block;
+  plan and impl review whenever a change's success depends on something outside the repo.
+
 ### Outstanding — CityFix production (delete each line once done)
 
-These are pending actions, not rules. Until items 1 and 2 are done, the `/admin/users` surface exists in the deployed app but is unreachable.
+Production first served the real application on 2026-09-14; before that the deploy had been
+failing silently since May, so several of these were unreachable rather than undone.
 
-- [ ] **Set `ADMIN_EMAIL` and `ADMIN_PASSWORD`** as App Service application settings. Without them `AdminSeeder` skips and production has no admin at all. Verify by logging in and loading `/admin/users`.
-- [ ] **Backfill the `active` column** on the azure database: `UPDATE users SET active = true WHERE active IS NULL;`. Rows written before S-03 are `NULL`; `User.isActive()` reads null as active so this is tidiness rather than correctness, but a future `NOT NULL` tightening depends on it.
-- [ ] **Verify the schema reached azure**: `\d users` shows `active | boolean` and `SELECT count(*) FROM users WHERE active IS NULL;` returns 0. Per the `ddl-auto=update` rule above, a green boot is not evidence.
-- [ ] **Confirm logout leaves no stale session-registry entry** against a real servlet container. `HttpSessionEventPublisher` needs container lifecycle events that MockMvc cannot fire, so this is untestable in the suite — verified only that the listener bean is registered. If it silently fails to register, the registry leaks an entry per logout.
-- [ ] **Optional cleanup**: remove the now-unread `STAFF_EMAIL` / `STAFF_PASSWORD` App Service settings (`StaffSeeder` was deleted in S-03).
+- [ ] **Confirm the admin can actually sign in.** `AdminSeeder` logged
+      `Admin account seeded for 'admin@cityfix.example'` at 2026-09-14T18:28:58Z, so the row
+      exists with the password from `ADMIN_PASSWORD`. Closing this needs a real login plus
+      `/admin/users` loading. Note the address is a non-routable `.example` domain and the seeder
+      skips when the email already exists, so changing it now requires a direct database edit.
+- [ ] **Confirm the `active` column and check whether the backfill is needed.** `\d users` should
+      show `active | boolean`. The backfill
+      (`UPDATE users SET active = true WHERE active IS NULL;`) is very likely a no-op here: the
+      azure database had no `users` table until 2026-09-14, so Hibernate created it from the
+      current mapping rather than migrating an existing one, and `User`'s constructor sets
+      `active = true`. Verify rather than assume — `SELECT count(*) FROM users WHERE active IS NULL;`
+      should return 0.
+- [ ] **Confirm logout leaves no stale session-registry entry** against the real container. Now
+      genuinely testable for the first time: `HttpSessionEventPublisher` needs container lifecycle
+      events MockMvc cannot fire, and the suite only asserts the listener bean is registered.
+- [ ] **Enable `httpsOnly`** on the App Service. It is currently `false`, so the site accepts
+      plain HTTP and admin credentials could travel unencrypted:
+      `az webapp update -g cityfix-rg -n cityfix-app-aj --set httpsOnly=true`.
+
+Done and removed: the `admin.seed.*` settings are in place; the schema hazard from
+`ddl-auto=update` did not apply because the table was created rather than migrated; and the
+`STAFF_EMAIL` / `STAFF_PASSWORD` cleanup was moot — those settings were never present on the app.
 
 > Single-instance constraint: `SessionRegistryImpl` is in-memory and per-instance, so deactivation only evicts sessions held by the instance serving the request. Correct on the current single-instance plan; scaling out requires a shared session store (Spring Session JDBC was considered and deferred).
